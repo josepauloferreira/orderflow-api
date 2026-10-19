@@ -49,7 +49,10 @@ class ProductApiIntegrationTests {
   void createsAndRetrievesProductWithCanonicalSku() throws Exception {
     var result =
         mockMvc
-            .perform(post(ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(createBody(" ab-123 ")))
+            .perform(
+                post(ENDPOINT)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(createBody(" ab-123 ")))
             .andExpect(status().isCreated())
             .andExpect(header().exists("Location"))
             .andExpect(jsonPath("$.sku").value("AB-123"))
@@ -60,16 +63,23 @@ class ProductApiIntegrationTests {
     var uri = result.getResponse().getHeader("Location");
     assertThat(uri).startsWith(ENDPOINT + "/");
 
-    mockMvc.perform(get(uri)).andExpect(status().isOk()).andExpect(jsonPath("$.sku").value("AB-123"));
+    mockMvc
+        .perform(get(uri))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.sku").value("AB-123"));
     assertThat(jdbc.queryForObject("SELECT count(*) FROM products", Long.class)).isEqualTo(1);
   }
 
   @Test
   void rejectsDuplicateSkuIncludingMixedCase() throws Exception {
-    mockMvc.perform(post(ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(createBody("abc-123")))
+    mockMvc
+        .perform(
+            post(ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(createBody("abc-123")))
         .andExpect(status().isCreated());
 
-    mockMvc.perform(post(ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(createBody("ABC-123")))
+    mockMvc
+        .perform(
+            post(ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(createBody("ABC-123")))
         .andExpect(status().isConflict())
         .andExpect(jsonPath("$.code").value("DUPLICATE_SKU"))
         .andExpect(jsonPath("$.status").value(409));
@@ -77,10 +87,12 @@ class ProductApiIntegrationTests {
 
   @Test
   void rejectsInvalidInputWithFieldViolations() throws Exception {
-    mockMvc.perform(
+    mockMvc
+        .perform(
             post(ENDPOINT)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""
+                .content(
+                    """
                     {"sku":"x","name":"   ","price":-1}
                     """))
         .andExpect(status().isBadRequest())
@@ -93,15 +105,21 @@ class ProductApiIntegrationTests {
   @Test
   void updatesAndDeactivatesWithoutChangingSku() throws Exception {
     var created =
-        mockMvc.perform(post(ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(createBody("sku-987")))
+        mockMvc
+            .perform(
+                post(ENDPOINT)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(createBody("sku-987")))
             .andExpect(status().isCreated())
             .andReturn();
     var uri = created.getResponse().getHeader("Location");
 
-    mockMvc.perform(
+    mockMvc
+        .perform(
             put(uri)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""
+                .content(
+                    """
                     {"name":"Updated Keyboard","description":null,"price":119.90}
                     """))
         .andExpect(status().isOk())
@@ -111,35 +129,48 @@ class ProductApiIntegrationTests {
 
     mockMvc.perform(post(uri + "/deactivate")).andExpect(status().isNoContent());
     mockMvc.perform(post(uri + "/deactivate")).andExpect(status().isNoContent());
-    mockMvc.perform(get(uri)).andExpect(status().isOk()).andExpect(jsonPath("$.active").value(false));
+    mockMvc
+        .perform(get(uri))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.active").value(false));
   }
 
   @Test
   void pagesAndFiltersUsingStableResponseShape() throws Exception {
     var created =
-        mockMvc.perform(post(ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(createBody("sku-001")))
+        mockMvc
+            .perform(
+                post(ENDPOINT)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(createBody("sku-001")))
             .andExpect(status().isCreated())
             .andReturn();
-    mockMvc.perform(post(ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(createBody("sku-002")))
+    mockMvc
+        .perform(
+            post(ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(createBody("sku-002")))
         .andExpect(status().isCreated());
 
-    mockMvc.perform(post(created.getResponse().getHeader("Location") + "/deactivate"))
+    mockMvc
+        .perform(post(created.getResponse().getHeader("Location") + "/deactivate"))
         .andExpect(status().isNoContent());
 
-    mockMvc.perform(get(ENDPOINT).param("active", "true").param("page", "0").param("size", "1"))
+    mockMvc
+        .perform(get(ENDPOINT).param("active", "true").param("page", "0").param("size", "1"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.totalElements").value(1))
         .andExpect(jsonPath("$.items.length()").value(1))
         .andExpect(jsonPath("$.items[0].sku").value("SKU-002"));
 
-    mockMvc.perform(get(ENDPOINT).param("page", "-1"))
+    mockMvc
+        .perform(get(ENDPOINT).param("page", "-1"))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.code").value("INVALID_PAGINATION"));
   }
 
   @Test
   void returnsNotFoundForUnknownProduct() throws Exception {
-    mockMvc.perform(get(ENDPOINT + "/" + UUID.randomUUID()))
+    mockMvc
+        .perform(get(ENDPOINT + "/" + UUID.randomUUID()))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.code").value("PRODUCT_NOT_FOUND"));
   }
@@ -154,7 +185,10 @@ class ProductApiIntegrationTests {
                       (id, sku, name, price, active, created_at, updated_at)
                     VALUES (?, ?, ?, ?, true, now(), now())
                     """,
-                    UUID.randomUUID(), "VALID-01", "Product", new BigDecimal("-1.00")))
+                    UUID.randomUUID(),
+                    "VALID-01",
+                    "Product",
+                    new BigDecimal("-1.00")))
         .isInstanceOf(DataIntegrityViolationException.class);
 
     assertThatThrownBy(
@@ -165,7 +199,10 @@ class ProductApiIntegrationTests {
                       (id, sku, name, price, active, created_at, updated_at)
                     VALUES (?, ?, ?, ?, true, now(), now())
                     """,
-                    UUID.randomUUID(), "lowercase", "Product", new BigDecimal("10.00")))
+                    UUID.randomUUID(),
+                    "lowercase",
+                    "Product",
+                    new BigDecimal("10.00")))
         .isInstanceOf(DataIntegrityViolationException.class);
   }
 

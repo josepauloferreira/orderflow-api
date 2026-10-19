@@ -10,7 +10,9 @@ class ProductTest {
 
   @Test
   void normalizesSkuNameDescriptionAndPrice() {
-    var product = Product.create(" ab-123 ", "  Mechanical Keyboard ", "  Quiet switches  ", new BigDecimal("129.9"));
+    var product =
+        Product.create(
+            " ab-123 ", "  Mechanical Keyboard ", "  Quiet switches  ", new BigDecimal("129.9"));
 
     assertThat(product.getId()).isNotNull();
     assertThat(product.getSku()).isEqualTo("AB-123");
@@ -23,11 +25,9 @@ class ProductTest {
 
   @Test
   void rejectsPriceBeyondColumnPrecisionOrScale() {
-    assertThatThrownBy(
-            () -> Product.create("SKU-1", "Product", null, new BigDecimal("-1.00")))
+    assertThatThrownBy(() -> Product.create("SKU-1", "Product", null, new BigDecimal("-1.00")))
         .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(
-            () -> Product.create("SKU-1", "Product", null, new BigDecimal("1.001")))
+    assertThatThrownBy(() -> Product.create("SKU-1", "Product", null, new BigDecimal("1.001")))
         .isInstanceOf(IllegalArgumentException.class);
     assertThatThrownBy(
             () -> Product.create("SKU-1", "Product", null, new BigDecimal("10000000000.00")))

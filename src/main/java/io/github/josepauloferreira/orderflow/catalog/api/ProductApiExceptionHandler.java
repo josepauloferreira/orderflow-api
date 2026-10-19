@@ -37,11 +37,12 @@ public class ProductApiExceptionHandler {
             .map(
                 error ->
                     Map.of(
-                        "field", error.getField(),
+                        "field",
+                        error.getField(),
                         "message",
-                            error.getDefaultMessage() == null
-                                ? "Invalid value"
-                                : error.getDefaultMessage()))
+                        error.getDefaultMessage() == null
+                            ? "Invalid value"
+                            : error.getDefaultMessage()))
             .sorted(Comparator.comparing(item -> item.get("field")))
             .toList();
     problem.setProperty("violations", violations);
