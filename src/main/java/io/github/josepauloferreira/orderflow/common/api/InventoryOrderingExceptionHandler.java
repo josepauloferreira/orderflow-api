@@ -6,6 +6,8 @@ import io.github.josepauloferreira.orderflow.inventory.domain.InactiveProductExc
 import io.github.josepauloferreira.orderflow.inventory.domain.InsufficientStockException;
 import io.github.josepauloferreira.orderflow.inventory.domain.InvalidStockAdjustmentException;
 import io.github.josepauloferreira.orderflow.ordering.api.OrderController;
+import io.github.josepauloferreira.orderflow.ordering.application.IdempotencyConflictException;
+import io.github.josepauloferreira.orderflow.ordering.application.InvalidIdempotencyKeyException;
 import io.github.josepauloferreira.orderflow.ordering.domain.InvalidOrderException;
 import io.github.josepauloferreira.orderflow.ordering.domain.OrderNotFoundException;
 import java.util.Comparator;
@@ -42,6 +44,16 @@ public class InventoryOrderingExceptionHandler {
   @ExceptionHandler({InvalidStockAdjustmentException.class, InvalidOrderException.class})
   public ProblemDetail invalidOperation(RuntimeException failure) {
     return problem(HttpStatus.BAD_REQUEST, "INVALID_OPERATION", failure.getMessage());
+  }
+
+  @ExceptionHandler(IdempotencyConflictException.class)
+  public ProblemDetail idempotencyConflict(IdempotencyConflictException failure) {
+    return problem(HttpStatus.CONFLICT, "IDEMPOTENCY_CONFLICT", failure.getMessage());
+  }
+
+  @ExceptionHandler(InvalidIdempotencyKeyException.class)
+  public ProblemDetail invalidIdempotencyKey(InvalidIdempotencyKeyException failure) {
+    return problem(HttpStatus.BAD_REQUEST, "INVALID_IDEMPOTENCY_KEY", failure.getMessage());
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)

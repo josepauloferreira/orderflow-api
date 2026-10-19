@@ -17,5 +17,19 @@ services:
       retries: 12
       start_period: 10s
 
+  keycloak:
+    profiles: ["auth"]
+    image: quay.io/keycloak/keycloak:26.8.1
+    command: start-dev --import-realm
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:8080"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: devadmin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
+      KC_HOSTNAME: http://localhost:8081
+    volumes:
+      - ./infra/keycloak/orderflow-realm.json:/opt/keycloak/data/import/orderflow-realm.json:ro
+
 volumes:
   postgres_data:

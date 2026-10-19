@@ -2,7 +2,7 @@
 
 A production-inspired REST API for order management and inventory control. This repository is intentionally developed in **small, verifiable increments** to demonstrate maintainable Java backend engineering.
 
-> **Current status:** Product catalog merged; inventory and ordering under review (PR #7). Security is not implemented. **Do not deploy this branch publicly.**
+> **Current status:** Inventory and orders are merged. JWT security and transactional idempotency are under review. Run with a trusted OIDC issuer; see [security documentation](docs/security-idempotency.md).
 
 ## Stack
 
@@ -22,7 +22,9 @@ A production-inspired REST API for order management and inventory control. This 
 
 ```bash
 cp .env.example .env
-docker compose up -d --wait
+docker compose --profile auth up -d --wait
+# confirm OIDC server readiness before launching Spring Boot
+curl -fsS http://localhost:8081/realms/orderflow/.well-known/openid-configuration > /dev/null
 
 set -a
 . ./.env
@@ -31,14 +33,16 @@ set +a
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-Open `http://localhost:8080/actuator/health` or use the catalog endpoints below after checking out the catalog branch (or after its PR has merged).
+Open `http://localhost:8080/actuator/health`. Public product GET requests need no bearer token; writes require the roles documented below.
 
 ## Run locally (Windows PowerShell)
 
 ```powershell
 Copy-Item .env.example .env
-docker compose up -d --wait
+docker compose --profile auth up -d --wait
+# Confirm readiness: http://localhost:8081/realms/orderflow/.well-known/openid-configuration
 
+$env:JWT_ISSUER_URI = "http://localhost:8081/realms/orderflow"
 $env:DB_URL = "jdbc:postgresql://localhost:5432/orderflow"
 $env:DB_USERNAME = "orderflow"
 $env:DB_PASSWORD = "change-me-local-only"
@@ -62,11 +66,22 @@ Example:
 
 ```bash
 curl -i -X POST http://localhost:8080/api/v1/products \
+  -H 'Authorization: Bearer <admin-access-token>' \
   -H 'Content-Type: application/json' \
   -d '{"sku":"kb-100","name":"Mechanical Keyboard","description":"Quiet switches","price":129.90}'
 ```
 
-See [catalog design](docs/catalog.md) and [inventory/ordering design](docs/inventory-orders.md) for implementation details.
+See [catalog design](docs/catalog.md), [inventory/ordering design](docs/inventory-orders.md) and [security/idempotency](docs/security-idempotency.md) for implementation details.
+
+## Authentication and order submission
+
+The API now requires a JWT from a configured issuer for private routes, and a required `Idempotency-Key` on order creation. For optional local development with Keycloak:
+
+```bash
+docker compose --profile auth up -d
+```
+
+See [local Keycloak instructions](docs/security-idempotency.md) for obtaining a sample token and the full authorization matrix.
 
 ## Checks
 
@@ -77,7 +92,7 @@ docker compose down           # stop database; keep volume
 docker compose down -v        # DELETE local database volume/data
 ```
 
-The integration smoke test starts **its own PostgreSQL container**. Running `docker compose up` is not necessary for the tests, but Docker must be available.
+The integration tests start their **own PostgreSQL container** and supply a mock OIDC JWK endpoint; the local Keycloak container is not needed for Maven verification, but Docker must be available.
 
 ## Configuration and data
 
@@ -94,7 +109,7 @@ Hibernate verifies the schema (`ddl-auto=validate`); Flyway will own DDL changes
 1. **Foundation:** build, configurations, formatting, local PostgreSQL, CI and a database-backed smoke test.
 2. **Catalog (PR #6):** product constraints, Flyway migrations, JPA, records/DTOs, MapStruct, Bean Validation and explicit exceptions.
 3. **Inventory and ordering (PR #7):** transaction boundaries, deterministic row locking, rollback and state transitions.
-4. **Security and resilience:** Spring Security OAuth2 resource server, authorization, idempotency and Problem Details.
+4. **Security and resilience (in progress):** Spring Security OAuth2 resource server, authorization, idempotency and Problem Details.
 5. **Operations:** application Dockerfile, metrics, structured logs and performance review.
 6. **Engineering review:** API documentation, architecture checks, examples and final validation.
 
