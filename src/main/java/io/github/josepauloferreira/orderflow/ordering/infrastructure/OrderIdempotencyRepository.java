@@ -13,9 +13,9 @@ public class OrderIdempotencyRepository {
   private final JdbcTemplate jdbc;
 
   /**
-   * Acquires a unique database key before any product locks. PostgreSQL waits for
-   * concurrent inserts with the same key to commit or roll back before resolving
-   * ON CONFLICT. The SELECT FOR UPDATE then sees the completed request.
+   * Acquires a unique database key before any product locks. PostgreSQL waits for concurrent
+   * inserts with the same key to commit or roll back before resolving ON CONFLICT. The SELECT FOR
+   * UPDATE then sees the completed request.
    */
   public UUID claim(String customer, String key, String digest) {
     int inserted =

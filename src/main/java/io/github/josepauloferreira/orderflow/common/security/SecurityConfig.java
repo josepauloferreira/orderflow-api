@@ -1,6 +1,5 @@
 package io.github.josepauloferreira.orderflow.common.security;
 
-import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,15 +17,16 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 public class SecurityConfig {
 
   @Bean
   SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper mapper) throws Exception {
-    return http
-        .csrf(csrf -> csrf.disable())
-        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+    return http.csrf(csrf -> csrf.disable())
+        .sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**")
@@ -51,15 +51,22 @@ public class SecurityConfig {
                     .authenticationEntryPoint(
                         (request, response, failure) ->
                             writeProblem(
-                                response, mapper, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED",
+                                response,
+                                mapper,
+                                HttpStatus.UNAUTHORIZED,
+                                "UNAUTHORIZED",
                                 "Authentication is required"))
                     .accessDeniedHandler(
                         (request, response, failure) ->
                             writeProblem(
-                                response, mapper, HttpStatus.FORBIDDEN, "FORBIDDEN",
+                                response,
+                                mapper,
+                                HttpStatus.FORBIDDEN,
+                                "FORBIDDEN",
                                 "Access denied")))
         .oauth2ResourceServer(
-            resource -> resource.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+            resource ->
+                resource.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
         .build();
   }
 

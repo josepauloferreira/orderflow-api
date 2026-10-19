@@ -28,8 +28,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.junit.jupiter.Container;
@@ -156,7 +156,8 @@ class InventoryOrderIntegrationTests {
     adjust(second, 1, "Initial delivery");
 
     mvc.perform(
-            post("/api/v1/orders").header("Idempotency-Key", UUID.randomUUID().toString())
+            post("/api/v1/orders")
+                .header("Idempotency-Key", UUID.randomUUID().toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(orderJson(first, 2, second, 2)))
         .andExpect(status().isConflict())
@@ -175,14 +176,16 @@ class InventoryOrderIntegrationTests {
     adjust(product, 5, "Initial delivery");
 
     mvc.perform(
-            post("/api/v1/orders").header("Idempotency-Key", UUID.randomUUID().toString())
+            post("/api/v1/orders")
+                .header("Idempotency-Key", UUID.randomUUID().toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(orderJson(product, 1, product, 1)))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.code").value("INVALID_OPERATION"));
 
     mvc.perform(
-            post("/api/v1/orders").header("Idempotency-Key", UUID.randomUUID().toString())
+            post("/api/v1/orders")
+                .header("Idempotency-Key", UUID.randomUUID().toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(orderJson(product, 0, product, 1)))
         .andExpect(status().isBadRequest())
@@ -198,7 +201,8 @@ class InventoryOrderIntegrationTests {
         .andExpect(status().isNoContent());
 
     mvc.perform(
-            post("/api/v1/orders").header("Idempotency-Key", UUID.randomUUID().toString())
+            post("/api/v1/orders")
+                .header("Idempotency-Key", UUID.randomUUID().toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(orderJson(product, 1)))
         .andExpect(status().isConflict())
@@ -349,7 +353,8 @@ class InventoryOrderIntegrationTests {
   private UUID createOrder(UUID first, int qtyFirst, UUID second, int qtySecond) throws Exception {
     var response =
         mvc.perform(
-                post("/api/v1/orders").header("Idempotency-Key", UUID.randomUUID().toString())
+                post("/api/v1/orders")
+                    .header("Idempotency-Key", UUID.randomUUID().toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(orderJson(first, qtyFirst, second, qtySecond)))
             .andExpect(status().isCreated())

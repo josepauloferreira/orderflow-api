@@ -39,7 +39,8 @@ public class OrderService {
   public record CreateResult(OrderResponse order, boolean created) {}
 
   @Transactional
-  public CreateResult create(CreateOrderRequest request, String customerSubject, String idempotencyKey) {
+  public CreateResult create(
+      CreateOrderRequest request, String customerSubject, String idempotencyKey) {
     if (customerSubject == null || customerSubject.isBlank() || customerSubject.length() > 200) {
       throw new InvalidOrderException("A valid authenticated customer is required");
     }
@@ -47,12 +48,18 @@ public class OrderService {
       throw new InvalidIdempotencyKeyException();
     }
     var requested = new LinkedHashMap<UUID, Integer>();
-    if (request == null || request.items() == null || request.items().isEmpty() || request.items().size() > 20) {
+    if (request == null
+        || request.items() == null
+        || request.items().isEmpty()
+        || request.items().size() > 20) {
       throw new InvalidOrderException("An order requires 1 to 20 items");
     }
     for (var item : request.items()) {
-      if (item == null || item.productId() == null || item.quantity() == null
-          || item.quantity() < 1 || item.quantity() > 1000) {
+      if (item == null
+          || item.productId() == null
+          || item.quantity() == null
+          || item.quantity() < 1
+          || item.quantity() > 1000) {
         throw new InvalidOrderException("Invalid order item");
       }
       if (requested.putIfAbsent(item.productId(), item.quantity()) != null) {
@@ -90,8 +97,7 @@ public class OrderService {
   }
 
   public OrderResponse findById(UUID id, String customerSubject, boolean administrator) {
-    var order =
-        orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
+    var order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
     authorize(order, customerSubject, administrator);
     return OrderResponse.from(order);
   }
@@ -123,8 +129,7 @@ public class OrderService {
     }
   }
 
-  private static String digest(
-      java.util.List<UUID> ids, Map<UUID, Integer> requested) {
+  private static String digest(java.util.List<UUID> ids, Map<UUID, Integer> requested) {
     var canonical = new StringBuilder("order-v1\n");
     for (UUID id : ids) {
       canonical.append(id).append(':').append(requested.get(id)).append('\n');

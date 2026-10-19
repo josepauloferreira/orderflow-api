@@ -39,8 +39,7 @@ public class OrderController {
 
   @GetMapping("/{id}")
   public OrderResponse findById(@PathVariable UUID id, Authentication authentication) {
-    return orderService.findById(
-        id, authentication.getName(), hasAdminRole(authentication));
+    return orderService.findById(id, authentication.getName(), hasAdminRole(authentication));
   }
 
   @PostMapping("/{id}/cancel")

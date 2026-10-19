@@ -63,18 +63,24 @@ class SecurityIdempotencyIntegrationTests {
     mvc.perform(get("/actuator/health")).andExpect(status().isOk());
     mvc.perform(get("/api/v1/products/" + UUID.randomUUID() + "/stock"))
         .andExpect(status().isUnauthorized());
-    mvc.perform(post("/api/v1/orders").contentType(MediaType.APPLICATION_JSON)
-            .content("{\"items\":[]}"))
+    mvc.perform(
+            post("/api/v1/orders")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"items\":[]}"))
         .andExpect(status().isUnauthorized());
 
-    mvc.perform(post("/api/v1/products").with(customer("customer-a"))
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"sku\":\"S-100\",\"name\":\"Item\",\"price\":10.00}"))
+    mvc.perform(
+            post("/api/v1/products")
+                .with(customer("customer-a"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"sku\":\"S-100\",\"name\":\"Item\",\"price\":10.00}"))
         .andExpect(status().isForbidden());
 
-    mvc.perform(post("/api/v1/products").with(admin())
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"sku\":\"S-100\",\"name\":\"Item\",\"price\":10.00}"))
+    mvc.perform(
+            post("/api/v1/products")
+                .with(admin())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"sku\":\"S-100\",\"name\":\"Item\",\"price\":10.00}"))
         .andExpect(status().isCreated());
   }
 
@@ -89,8 +95,7 @@ class SecurityIdempotencyIntegrationTests {
         .andExpect(status().isForbidden());
     mvc.perform(post("/api/v1/orders/" + order + "/cancel").with(customer("customer-b")))
         .andExpect(status().isForbidden());
-    mvc.perform(get("/api/v1/orders/" + order).with(admin()))
-        .andExpect(status().isOk());
+    mvc.perform(get("/api/v1/orders/" + order).with(admin())).andExpect(status().isOk());
 
     assertThat(remaining(product)).isEqualTo(2);
     mvc.perform(post("/api/v1/orders/" + order + "/cancel").with(customer("customer-a")))
@@ -104,19 +109,27 @@ class SecurityIdempotencyIntegrationTests {
     var body = orderJson(product, 2);
 
     var first =
-        mvc.perform(post("/api/v1/orders").with(customer("customer-a"))
-                .header("Idempotency-Key", "order-key-0002")
-                .contentType(MediaType.APPLICATION_JSON).content(body))
+        mvc.perform(
+                post("/api/v1/orders")
+                    .with(customer("customer-a"))
+                    .header("Idempotency-Key", "order-key-0002")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
             .andExpect(status().isCreated())
             .andReturn();
     String location = first.getResponse().getHeader("Location");
 
-    mvc.perform(post("/api/v1/orders").with(customer("customer-a"))
-            .header("Idempotency-Key", "order-key-0002")
-            .contentType(MediaType.APPLICATION_JSON).content(body))
+    mvc.perform(
+            post("/api/v1/orders")
+                .with(customer("customer-a"))
+                .header("Idempotency-Key", "order-key-0002")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id")
-            .value(UUID.fromString(location.substring(location.lastIndexOf('/') + 1)).toString()));
+        .andExpect(
+            jsonPath("$.id")
+                .value(
+                    UUID.fromString(location.substring(location.lastIndexOf('/') + 1)).toString()));
 
     assertThat(remaining(product)).isEqualTo(2);
     assertThat(count("customer_orders")).isEqualTo(1);
@@ -129,9 +142,12 @@ class SecurityIdempotencyIntegrationTests {
       throws Exception {
     UUID product = seed("SEC-102", 5);
     createOrder(product, "customer-a", "order-key-0003", 1);
-    mvc.perform(post("/api/v1/orders").with(customer("customer-a"))
-            .header("Idempotency-Key", "order-key-0003")
-            .contentType(MediaType.APPLICATION_JSON).content(orderJson(product, 2)))
+    mvc.perform(
+            post("/api/v1/orders")
+                .with(customer("customer-a"))
+                .header("Idempotency-Key", "order-key-0003")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(orderJson(product, 2)))
         .andExpect(status().isConflict())
         .andExpect(jsonPath("$.code").value("IDEMPOTENCY_CONFLICT"));
 
@@ -143,22 +159,25 @@ class SecurityIdempotencyIntegrationTests {
   @Test
   void concurrentRetriesWithSameKeyProduceOnlyOneOrder() throws Exception {
     UUID product = seed("SEC-103", 2);
-    var request =
-        new CreateOrderRequest(List.of(new CreateOrderRequest.Item(product, 1)));
+    var request = new CreateOrderRequest(List.of(new CreateOrderRequest.Item(product, 1)));
     var ready = new CountDownLatch(2);
     var start = new CountDownLatch(1);
 
     try (var pool = Executors.newFixedThreadPool(2)) {
-      var one = pool.submit(() -> {
-        ready.countDown();
-        if (!start.await(10, TimeUnit.SECONDS)) throw new AssertionError("Not started");
-        return orders.create(request, "customer-a", "concurrent-key-001");
-      });
-      var two = pool.submit(() -> {
-        ready.countDown();
-        if (!start.await(10, TimeUnit.SECONDS)) throw new AssertionError("Not started");
-        return orders.create(request, "customer-a", "concurrent-key-001");
-      });
+      var one =
+          pool.submit(
+              () -> {
+                ready.countDown();
+                if (!start.await(10, TimeUnit.SECONDS)) throw new AssertionError("Not started");
+                return orders.create(request, "customer-a", "concurrent-key-001");
+              });
+      var two =
+          pool.submit(
+              () -> {
+                ready.countDown();
+                if (!start.await(10, TimeUnit.SECONDS)) throw new AssertionError("Not started");
+                return orders.create(request, "customer-a", "concurrent-key-001");
+              });
       assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
       start.countDown();
       var left = one.get(30, TimeUnit.SECONDS);
@@ -175,12 +194,18 @@ class SecurityIdempotencyIntegrationTests {
   @Test
   void requiresWellFormedIdempotencyKey() throws Exception {
     UUID product = seed("SEC-104", 2);
-    mvc.perform(post("/api/v1/orders").with(customer("customer-a"))
-            .contentType(MediaType.APPLICATION_JSON).content(orderJson(product, 1)))
+    mvc.perform(
+            post("/api/v1/orders")
+                .with(customer("customer-a"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(orderJson(product, 1)))
         .andExpect(status().isBadRequest());
-    mvc.perform(post("/api/v1/orders").with(customer("customer-a"))
-            .header("Idempotency-Key", "short")
-            .contentType(MediaType.APPLICATION_JSON).content(orderJson(product, 1)))
+    mvc.perform(
+            post("/api/v1/orders")
+                .with(customer("customer-a"))
+                .header("Idempotency-Key", "short")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(orderJson(product, 1)))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.code").value("INVALID_IDEMPOTENCY_KEY"));
     assertThat(count("customer_orders")).isZero();
@@ -197,15 +222,22 @@ class SecurityIdempotencyIntegrationTests {
             .claim("realm_access", Map.of("roles", List.of("CUSTOMER", "unknown", "ADMIN")))
             .build();
 
-    var granted = converter.convert(good).getAuthorities().stream()
-        .map(authority -> authority.getAuthority()).toList();
-    assertThat(granted).contains("ROLE_CUSTOMER", "ROLE_ADMIN")
-        .doesNotContain("ROLE_unknown");
+    var granted =
+        converter.convert(good).getAuthorities().stream()
+            .map(authority -> authority.getAuthority())
+            .toList();
+    assertThat(granted).contains("ROLE_CUSTOMER", "ROLE_ADMIN").doesNotContain("ROLE_unknown");
 
-    Jwt noRoles = Jwt.withTokenValue("sample").header("alg", "RS256")
-        .subject("customer-a").claim("scope", "ADMIN").build();
-    var noGranted = converter.convert(noRoles).getAuthorities().stream()
-        .map(authority -> authority.getAuthority()).toList();
+    Jwt noRoles =
+        Jwt.withTokenValue("sample")
+            .header("alg", "RS256")
+            .subject("customer-a")
+            .claim("scope", "ADMIN")
+            .build();
+    var noGranted =
+        converter.convert(noRoles).getAuthorities().stream()
+            .map(authority -> authority.getAuthority())
+            .toList();
     assertThat(noGranted).doesNotContain("ROLE_ADMIN");
   }
 
@@ -216,20 +248,25 @@ class SecurityIdempotencyIntegrationTests {
         INSERT INTO products(id,sku,name,price,active,created_at,updated_at)
         VALUES (?, ?, ?, 10.00, true, now(), now())
         """,
-        id, sku, sku);
+        id,
+        sku,
+        sku);
     jdbc.update(
         "INSERT INTO inventory(product_id,available_quantity,updated_at) VALUES (?,?,now())",
-        id, stock);
+        id,
+        stock);
     return id;
   }
 
   private UUID createOrder(UUID product, String customer, String key, int quantity)
       throws Exception {
     var response =
-        mvc.perform(post("/api/v1/orders").with(customer(customer))
-                .header("Idempotency-Key", key)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(orderJson(product, quantity)))
+        mvc.perform(
+                post("/api/v1/orders")
+                    .with(customer(customer))
+                    .header("Idempotency-Key", key)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(orderJson(product, quantity)))
             .andExpect(status().isCreated())
             .andReturn();
     String location = response.getResponse().getHeader("Location");
@@ -248,17 +285,20 @@ class SecurityIdempotencyIntegrationTests {
   private static String orderJson(UUID id, int quantity) {
     return """
         {"items":[{"productId":"%s","quantity":%d}]}
-        """.formatted(id, quantity);
+        """
+        .formatted(id, quantity);
   }
 
   private static org.springframework.test.web.servlet.request.RequestPostProcessor customer(
       String subject) {
-    return jwt().jwt(builder -> builder.subject(subject))
+    return jwt()
+        .jwt(builder -> builder.subject(subject))
         .authorities(new SimpleGrantedAuthority("ROLE_CUSTOMER"));
   }
 
   private static org.springframework.test.web.servlet.request.RequestPostProcessor admin() {
-    return jwt().jwt(builder -> builder.subject("admin-a"))
+    return jwt()
+        .jwt(builder -> builder.subject("admin-a"))
         .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
   }
 }
