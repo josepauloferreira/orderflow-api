@@ -10,7 +10,7 @@ A production-inspired REST API for order management and inventory control. This 
 - Spring MVC, Bean Validation, Spring Data JPA, Hibernate and Actuator.
 - PostgreSQL 18, Flyway and Docker Compose.
 - JUnit Jupiter, AssertJ and Testcontainers 2 for integration testing.
-- Spotless / google-java-format and GitHub Actions.
+- Lombok 1.18.48 for selective Java boilerplate reduction; Spotless / google-java-format and GitHub Actions.
 
 ## Requirements
 
@@ -79,6 +79,16 @@ Hibernate verifies the schema (`ddl-auto=validate`); Flyway will own DDL changes
 6. **Engineering review:** API documentation, architecture checks, examples and final validation.
 
 See [ADR 0001](docs/adr/0001-modular-monolith.md) for architecture trade-offs. No business endpoints are claimed complete until their behavior and tests exist.
+
+## Lombok guidelines
+
+Lombok is configured with an explicit Maven annotation-processor path (required on Java 25). IDEs may need annotation processing enabled.
+
+- Prefer Java **records** for request/response DTOs; do not use Lombok just to replace them.
+- Use focused annotations such as `@Getter`, `@NoArgsConstructor(access = AccessLevel.PROTECTED)` and `@RequiredArgsConstructor` where useful.
+- Do **not** put `@Data` on JPA entities: the generated setters, equality, hash code and `toString` may undermine invariants or traverse lazy relationships.
+- Keep business-state mutations in explicit domain methods. Do not use `@Setter` indiscriminately on entities.
+- MapStruct remains responsible for DTO mapping; when we add it, configure its annotation processor together with Lombok and its binding adapter where applicable.
 
 ## Working agreements
 
