@@ -78,7 +78,7 @@ Hibernate verifies the schema (`ddl-auto=validate`); Flyway will own DDL changes
 5. **Operations:** application Dockerfile, metrics, structured logs and performance review.
 6. **Engineering review:** API documentation, architecture checks, examples and final validation.
 
-See [ADR 0001](docs/adr/0001-modular-monolith.md) for architecture trade-offs. No business endpoints are claimed complete until their behavior and tests exist.
+See [ADR 0001](docs/adr/0001-modular-monolith.md) for modular architecture and [ADR 0002](docs/adr/0002-flyway-schema-first.md) for our migration-driven, schema-first persistence policy. No business endpoints are claimed complete until their behavior and tests exist.
 
 ## Lombok guidelines
 
