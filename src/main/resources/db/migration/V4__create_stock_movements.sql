@@ -9,6 +9,11 @@ CREATE TABLE stock_movements (
     note VARCHAR(200),
     created_at TIMESTAMPTZ NOT NULL,
     CONSTRAINT ck_stock_movements_delta_nonzero CHECK (delta <> 0),
+    CONSTRAINT ck_stock_movements_direction CHECK (
+      (kind = 'ORDER_CONFIRMED' AND delta < 0)
+      OR (kind = 'ORDER_CANCELLED' AND delta > 0)
+      OR kind = 'MANUAL_ADJUSTMENT'
+    ),
     CONSTRAINT ck_stock_movements_kind CHECK (
       kind IN ('MANUAL_ADJUSTMENT', 'ORDER_CONFIRMED', 'ORDER_CANCELLED')
     ),

@@ -15,6 +15,7 @@ import io.github.josepauloferreira.orderflow.inventory.infrastructure.StockRepos
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -40,7 +41,10 @@ public class StockService {
     // Lock the parent row even when no inventory row exists yet. This serializes
     // the first adjustment, orders and cancellations for the same product.
     lockProduct(productId);
-    if (request.delta() == 0) {
+    if (request.reason() == null || request.reason().isBlank()) {
+      throw new InvalidStockAdjustmentException("Stock adjustment reason is required");
+    }
+    if (request.delta() == null || request.delta() == 0) {
       throw new InvalidStockAdjustmentException("Stock adjustment cannot be zero");
     }
     Stock stock = stockRepository.findById(productId).orElseGet(() -> Stock.empty(productId));
@@ -54,6 +58,7 @@ public class StockService {
 
   // Called from the order application service in a single outer transaction.
   // Product locks MUST already be held in ascending UUID order.
+  @Transactional(propagation = Propagation.MANDATORY)
   public void requireAvailable(UUID productId, int requested) {
     int available =
         stockRepository.findById(productId).map(Stock::getAvailableQuantity).orElse(0);
@@ -62,14 +67,17 @@ public class StockService {
     }
   }
 
+  @Transactional(propagation = Propagation.MANDATORY)
   public void consume(UUID productId, int quantity, UUID orderId) {
     changeForOrder(productId, -quantity, orderId, MovementKind.ORDER_CONFIRMED);
   }
 
+  @Transactional(propagation = Propagation.MANDATORY)
   public void restore(UUID productId, int quantity, UUID orderId) {
     changeForOrder(productId, quantity, orderId, MovementKind.ORDER_CANCELLED);
   }
 
+  @Transactional(propagation = Propagation.MANDATORY)
   public Product lockProduct(UUID productId) {
     return productRepository
         .findByIdForUpdate(productId)
@@ -80,7 +88,7 @@ public class StockService {
     Stock stock =
         stockRepository
             .findById(productId)
-            .orElseThrow(() -> new InsufficientStockException(productId, 0, -((long) delta)));
+            .orElseThrow(() -> new IllegalStateException("Missing stock row for product " + productId));
     stock.change(delta);
     movementRepository.save(StockMovement.record(productId, orderId, kind, delta, null));
   }

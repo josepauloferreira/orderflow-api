@@ -8,8 +8,10 @@ import io.github.josepauloferreira.orderflow.ordering.api.dto.OrderResponse;
 import io.github.josepauloferreira.orderflow.ordering.domain.CustomerOrder;
 import io.github.josepauloferreira.orderflow.ordering.domain.InvalidOrderException;
 import io.github.josepauloferreira.orderflow.ordering.domain.OrderNotFoundException;
+import io.github.josepauloferreira.orderflow.ordering.domain.OrderStatus;
 import io.github.josepauloferreira.orderflow.ordering.infrastructure.OrderRepository;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -71,12 +73,12 @@ public class OrderService {
     // Serialize repeated cancellations first, then lock products in UUID order.
     var order =
         orderRepository.findByIdForUpdate(id).orElseThrow(() -> new OrderNotFoundException(id));
-    if (order.getStatus() == io.github.josepauloferreira.orderflow.ordering.domain.OrderStatus.CANCELLED) {
+    if (order.getStatus() == OrderStatus.CANCELLED) {
       return;
     }
 
     var lines = new ArrayList<>(order.getLines());
-    lines.sort(java.util.Comparator.comparing(line -> line.getProductId()));
+    lines.sort(Comparator.comparing(line -> line.getProductId()));
     for (var line : lines) {
       stockService.lockProduct(line.getProductId());
     }

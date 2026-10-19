@@ -35,6 +35,7 @@ public class CustomerOrder {
   private Instant createdAt;
   private Instant updatedAt;
 
+  @Getter(AccessLevel.NONE)
   @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<OrderLine> lines = new ArrayList<>();
 
@@ -61,6 +62,10 @@ public class CustomerOrder {
       throw new InvalidOrderException("Order total exceeds supported precision");
     }
     return order;
+  }
+
+  public List<OrderLine> getLines() {
+    return List.copyOf(lines);
   }
 
   public boolean cancel() {
