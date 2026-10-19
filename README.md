@@ -2,7 +2,7 @@
 
 A production-inspired REST API for order management and inventory control. This repository is intentionally developed in **small, verifiable increments** to demonstrate maintainable Java backend engineering.
 
-> **Current status:** Product catalog implemented and under review (PR #6). Inventory, orders and security remain future milestones. **There is currently no authentication; do not deploy this branch publicly.**
+> **Current status:** Product catalog merged; inventory and ordering under review (PR #7). Security is not implemented. **Do not deploy this branch publicly.**
 
 ## Stack
 
@@ -66,7 +66,7 @@ curl -i -X POST http://localhost:8080/api/v1/products \
   -d '{"sku":"kb-100","name":"Mechanical Keyboard","description":"Quiet switches","price":129.90}'
 ```
 
-See [catalog API and persistence design](docs/catalog.md) for detailed constraints, response shapes, examples and trade-offs.
+See [catalog design](docs/catalog.md) and [inventory/ordering design](docs/inventory-orders.md) for implementation details.
 
 ## Checks
 
@@ -93,7 +93,7 @@ Hibernate verifies the schema (`ddl-auto=validate`); Flyway will own DDL changes
 
 1. **Foundation:** build, configurations, formatting, local PostgreSQL, CI and a database-backed smoke test.
 2. **Catalog (PR #6):** product constraints, Flyway migrations, JPA, records/DTOs, MapStruct, Bean Validation and explicit exceptions.
-3. **Inventory and ordering:** transaction boundaries, locking, rollback and state transitions.
+3. **Inventory and ordering (PR #7):** transaction boundaries, deterministic row locking, rollback and state transitions.
 4. **Security and resilience:** Spring Security OAuth2 resource server, authorization, idempotency and Problem Details.
 5. **Operations:** application Dockerfile, metrics, structured logs and performance review.
 6. **Engineering review:** API documentation, architecture checks, examples and final validation.
