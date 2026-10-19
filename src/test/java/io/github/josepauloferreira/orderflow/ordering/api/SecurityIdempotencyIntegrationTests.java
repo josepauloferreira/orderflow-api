@@ -192,6 +192,29 @@ class SecurityIdempotencyIntegrationTests {
   }
 
   @Test
+  void aRolledBackAttemptDoesNotPermanentlyReserveTheIdempotencyKey() throws Exception {
+    UUID product = seed("SEC-105", 1);
+    String key = "retry-after-stock-01";
+    mvc.perform(
+            post("/api/v1/orders")
+                .with(customer("customer-a"))
+                .header("Idempotency-Key", key)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(orderJson(product, 2)))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.code").value("INSUFFICIENT_STOCK"));
+
+    assertThat(count("order_idempotency")).isZero();
+    jdbc.update(
+        "UPDATE inventory SET available_quantity = 3 WHERE product_id = ?", product);
+
+    createOrder(product, "customer-a", key, 2);
+    assertThat(count("order_idempotency")).isEqualTo(1);
+    assertThat(count("customer_orders")).isEqualTo(1);
+    assertThat(remaining(product)).isEqualTo(1);
+  }
+
+  @Test
   void requiresWellFormedIdempotencyKey() throws Exception {
     UUID product = seed("SEC-104", 2);
     mvc.perform(
