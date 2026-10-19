@@ -1,0 +1,33 @@
+# Maven
+/target/
+**/target/
+*.class
+
+# Local credentials and configuration
+.env
+.env.*
+!.env.example
+application-secrets.yml
+application-secrets.yaml
+
+# IDE/editor
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs and runtime
+*.log
+logs/
+*.pid
+
+# Test reports / local caches
+.coverage/
+.mvn/.cache/
