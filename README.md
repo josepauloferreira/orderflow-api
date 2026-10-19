@@ -22,7 +22,9 @@ A production-inspired REST API for order management and inventory control. This 
 
 ```bash
 cp .env.example .env
-docker compose up -d --wait
+docker compose --profile auth up -d --wait
+# confirm OIDC server readiness before launching Spring Boot
+curl -fsS http://localhost:8081/realms/orderflow/.well-known/openid-configuration > /dev/null
 
 set -a
 . ./.env
@@ -31,14 +33,16 @@ set +a
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-Open `http://localhost:8080/actuator/health` or use the catalog endpoints below after checking out the catalog branch (or after its PR has merged).
+Open `http://localhost:8080/actuator/health`. Public product GET requests need no bearer token; writes require the roles documented below.
 
 ## Run locally (Windows PowerShell)
 
 ```powershell
 Copy-Item .env.example .env
-docker compose up -d --wait
+docker compose --profile auth up -d --wait
+# Confirm readiness: http://localhost:8081/realms/orderflow/.well-known/openid-configuration
 
+$env:JWT_ISSUER_URI = "http://localhost:8081/realms/orderflow"
 $env:DB_URL = "jdbc:postgresql://localhost:5432/orderflow"
 $env:DB_USERNAME = "orderflow"
 $env:DB_PASSWORD = "change-me-local-only"
@@ -62,6 +66,7 @@ Example:
 
 ```bash
 curl -i -X POST http://localhost:8080/api/v1/products \
+  -H 'Authorization: Bearer <admin-access-token>' \
   -H 'Content-Type: application/json' \
   -d '{"sku":"kb-100","name":"Mechanical Keyboard","description":"Quiet switches","price":129.90}'
 ```
@@ -87,7 +92,7 @@ docker compose down           # stop database; keep volume
 docker compose down -v        # DELETE local database volume/data
 ```
 
-The integration smoke test starts **its own PostgreSQL container**. Running `docker compose up` is not necessary for the tests, but Docker must be available.
+The integration tests start their **own PostgreSQL container** and supply a mock OIDC JWK endpoint; the local Keycloak container is not needed for Maven verification, but Docker must be available.
 
 ## Configuration and data
 
