@@ -8,17 +8,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import io.github.josepauloferreira.orderflow.inventory.application.StockService;
 import io.github.josepauloferreira.orderflow.inventory.api.dto.StockAdjustmentRequest;
+import io.github.josepauloferreira.orderflow.inventory.application.StockService;
 import io.github.josepauloferreira.orderflow.inventory.domain.InsufficientStockException;
 import io.github.josepauloferreira.orderflow.ordering.api.dto.CreateOrderRequest;
 import io.github.josepauloferreira.orderflow.ordering.application.OrderService;
+import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
