@@ -17,8 +17,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 @Testcontainers
 class OrderFlowApplicationTests {
 
-  @Container
-  @ServiceConnection
+  @Container @ServiceConnection
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18-alpine");
 
   @Autowired private JdbcTemplate jdbcTemplate;
