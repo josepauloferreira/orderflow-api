@@ -31,6 +31,7 @@ public class CustomerOrder {
   @Enumerated(EnumType.STRING)
   private OrderStatus status;
 
+  private String customerSubject;
   private BigDecimal totalAmount;
   private Instant createdAt;
   private Instant updatedAt;
@@ -39,12 +40,16 @@ public class CustomerOrder {
   @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<OrderLine> lines = new ArrayList<>();
 
-  public static CustomerOrder confirm(Map<Product, Integer> items) {
+  public static CustomerOrder confirm(Map<Product, Integer> items, String customerSubject) {
     if (items.isEmpty()) {
       throw new InvalidOrderException("An order needs at least one item");
     }
     var order = new CustomerOrder();
+    if (customerSubject == null || customerSubject.isBlank() || customerSubject.length() > 200) {
+      throw new InvalidOrderException("Valid customer identity required");
+    }
     order.id = UUID.randomUUID();
+    order.customerSubject = customerSubject;
     order.status = OrderStatus.CONFIRMED;
     order.createdAt = Instant.now();
     order.updatedAt = order.createdAt;
