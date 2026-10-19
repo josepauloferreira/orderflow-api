@@ -54,7 +54,9 @@
       ],
       "realmRoles": [
         "CUSTOMER"
-      ]
+      ],
+      "email": "demo-customer@example.test",
+      "requiredActions": []
     },
     {
       "username": "demo-admin",
@@ -71,7 +73,9 @@
       ],
       "realmRoles": [
         "ADMIN"
-      ]
+      ],
+      "email": "demo-admin@example.test",
+      "requiredActions": []
     }
   ]
 }
