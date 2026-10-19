@@ -59,6 +59,7 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: devadmin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
       KC_HOSTNAME: http://localhost:8081
+    mem_limit: 1g
     volumes:
       - ./infra/keycloak/orderflow-realm.json:/opt/keycloak/data/import/orderflow-realm.json:ro
 
