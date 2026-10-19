@@ -60,7 +60,7 @@ assert_status 200 "$(http_status "$api/api/v1/products")"
 assert_status 401 "$(http_status "$api/actuator/prometheus")"
 assert_status 403 "$(http_status --header "Authorization: Bearer $customer" "$api/actuator/prometheus")"
 assert_status 200 "$(http_status --header "Authorization: Bearer $admin" "$api/actuator/prometheus")"
-grep -q orderflow_orders_created_total "$scratch"
+grep -q orderflow_orders_confirmed_total "$scratch"
 
 sku="SMOKE-$(date +%s)"
 assert_status 201 "$(http_status --request POST "$api/api/v1/products" \

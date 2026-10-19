@@ -60,7 +60,7 @@ curl --fail-with-body \
 
 Custom Micrometer counters (Prometheus suffix `_total`) are:
 
-- `orderflow.orders.created`: first-time order confirmations committed.
+- `orderflow.orders.confirmed`: first-time order confirmations committed.
 - `orderflow.orders.replayed`: successful idempotent replays committed.
 - `orderflow.orders.cancelled`: first-time cancellations committed.
 - `orderflow.stock.adjusted`: manual inventory adjustments committed.

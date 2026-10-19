@@ -60,8 +60,8 @@ class OperationsIntegrationTests {
             .andReturn();
 
     assertThat(result.getResponse().getContentAsString())
-        .contains("orderflow_orders_created_total");
-    assertThat(registry.find("orderflow.orders.created").counter()).isNotNull();
+        .contains("orderflow_orders_confirmed_total");
+    assertThat(registry.find("orderflow.orders.confirmed").counter()).isNotNull();
   }
 
   @Test

@@ -19,7 +19,7 @@ public class DomainMetrics {
   private final Counter stockAdjusted;
 
   public DomainMetrics(MeterRegistry registry) {
-    ordersCreated = registry.counter("orderflow.orders.created");
+    ordersCreated = registry.counter("orderflow.orders.confirmed");
     ordersReplayed = registry.counter("orderflow.orders.replayed");
     ordersCancelled = registry.counter("orderflow.orders.cancelled");
     stockAdjusted = registry.counter("orderflow.stock.adjusted");

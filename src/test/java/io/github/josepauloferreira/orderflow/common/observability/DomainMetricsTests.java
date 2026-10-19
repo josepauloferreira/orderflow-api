@@ -14,7 +14,7 @@ class DomainMetricsTests {
     var registry = new SimpleMeterRegistry();
     var metrics = new DomainMetrics(registry);
     assertThatThrownBy(metrics::orderCreated).isInstanceOf(IllegalStateException.class);
-    assertThat(registry.get("orderflow.orders.created").counter().count()).isZero();
+    assertThat(registry.get("orderflow.orders.confirmed").counter().count()).isZero();
   }
 
   @Test
@@ -25,9 +25,9 @@ class DomainMetricsTests {
     TransactionSynchronizationManager.setActualTransactionActive(true);
     try {
       metrics.orderCreated();
-      assertThat(registry.get("orderflow.orders.created").counter().count()).isZero();
+      assertThat(registry.get("orderflow.orders.confirmed").counter().count()).isZero();
       TransactionSynchronizationManager.getSynchronizations().forEach(sync -> sync.afterCommit());
-      assertThat(registry.get("orderflow.orders.created").counter().count()).isEqualTo(1);
+      assertThat(registry.get("orderflow.orders.confirmed").counter().count()).isEqualTo(1);
     } finally {
       TransactionSynchronizationManager.clear();
     }
