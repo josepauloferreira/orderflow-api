@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import io.github.josepauloferreira.orderflow.inventory.application.StockService;
+import io.github.josepauloferreira.orderflow.inventory.api.dto.StockAdjustmentRequest;
 import io.github.josepauloferreira.orderflow.inventory.domain.InsufficientStockException;
 import io.github.josepauloferreira.orderflow.ordering.api.dto.CreateOrderRequest;
 import io.github.josepauloferreira.orderflow.ordering.application.OrderService;
@@ -16,6 +18,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +30,7 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -43,6 +47,9 @@ class InventoryOrderIntegrationTests {
   @Autowired private MockMvc mvc;
   @Autowired private JdbcTemplate jdbc;
   @Autowired private OrderService orders;
+  @Autowired private StockService stockService;
+  @Autowired private TransactionTemplate transactionTemplate;
+  @Autowired private EntityManager entityManager;
 
   @BeforeEach
   void reset() {
@@ -220,6 +227,66 @@ class InventoryOrderIntegrationTests {
             jdbc.queryForObject(
                 "SELECT count(*) FROM stock_movements WHERE kind = 'ORDER_CONFIRMED'", Long.class))
         .isEqualTo(1);
+  }
+
+  @Test
+  void failureAfterFlushingStockAndLedgerRollsBackTheEntireTransaction() throws Exception {
+    UUID product = createProduct("STOCK-11", "25.00");
+    adjust(product, 2, "Initial delivery");
+
+    assertThatThrownBy(
+            () ->
+                transactionTemplate.executeWithoutResult(
+                    status -> {
+                      stockService.adjust(
+                          product, new StockAdjustmentRequest(3, "Receipt before failure"));
+                      entityManager.flush();
+                      jdbc.update(
+                          "UPDATE inventory SET available_quantity = -1 WHERE product_id = ?",
+                          product);
+                    }))
+        .isInstanceOf(DataIntegrityViolationException.class);
+
+    assertThat(available(product)).isEqualTo(2);
+    assertThat(count("stock_movements")).isEqualTo(1);
+  }
+
+  @Test
+  void parallelFirstStockAdjustmentsCreateOnlyOneInventoryRow() throws Exception {
+    UUID product = createProduct("STOCK-12", "25.00");
+    var start = new CountDownLatch(1);
+    var ready = new CountDownLatch(2);
+    try (var pool = Executors.newFixedThreadPool(2)) {
+      var first =
+          pool.submit(
+              () -> {
+                ready.countDown();
+                if (!start.await(10, TimeUnit.SECONDS)) {
+                  throw new AssertionError("First adjustment did not start");
+                }
+                stockService.adjust(product, new StockAdjustmentRequest(1, "Receipt A"));
+                return true;
+              });
+      var second =
+          pool.submit(
+              () -> {
+                ready.countDown();
+                if (!start.await(10, TimeUnit.SECONDS)) {
+                  throw new AssertionError("Second adjustment did not start");
+                }
+                stockService.adjust(product, new StockAdjustmentRequest(2, "Receipt B"));
+                return true;
+              });
+
+      assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
+      start.countDown();
+      assertThat(first.get(30, TimeUnit.SECONDS)).isTrue();
+      assertThat(second.get(30, TimeUnit.SECONDS)).isTrue();
+    }
+
+    assertThat(available(product)).isEqualTo(3);
+    assertThat(count("inventory")).isEqualTo(1);
+    assertThat(count("stock_movements")).isEqualTo(2);
   }
 
   @Test
