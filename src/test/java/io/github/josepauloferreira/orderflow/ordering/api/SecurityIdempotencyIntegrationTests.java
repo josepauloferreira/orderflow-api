@@ -205,8 +205,7 @@ class SecurityIdempotencyIntegrationTests {
         .andExpect(jsonPath("$.code").value("INSUFFICIENT_STOCK"));
 
     assertThat(count("order_idempotency")).isZero();
-    jdbc.update(
-        "UPDATE inventory SET available_quantity = 3 WHERE product_id = ?", product);
+    jdbc.update("UPDATE inventory SET available_quantity = 3 WHERE product_id = ?", product);
 
     createOrder(product, "customer-a", key, 2);
     assertThat(count("order_idempotency")).isEqualTo(1);
