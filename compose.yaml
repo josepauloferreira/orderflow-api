@@ -17,6 +17,37 @@ services:
       retries: 12
       start_period: 10s
 
+  api:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: orderflow-api:local
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: container
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:?Set DB_NAME in .env}
+      DB_USERNAME: ${DB_USERNAME:?Set DB_USERNAME in .env}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      JWT_ISSUER_URI: http://localhost:8081/realms/orderflow
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/orderflow/protocol/openid-connect/certs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    stop_grace_period: 30s
+    mem_limit: 768m
+
   keycloak:
     profiles: ["auth"]
     image: quay.io/keycloak/keycloak:26.8.1
