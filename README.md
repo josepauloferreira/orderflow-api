@@ -2,7 +2,7 @@
 
 A production-inspired REST API for order management and inventory control. This repository is intentionally developed in **small, verifiable increments** to demonstrate maintainable Java backend engineering.
 
-> **Current status:** Project foundation only. Product, inventory, order and security endpoints are **not implemented yet**.
+> **Current status:** Product catalog implemented and under review (PR #6). Inventory, orders and security remain future milestones. **There is currently no authentication; do not deploy this branch publicly.**
 
 ## Stack
 
@@ -10,7 +10,7 @@ A production-inspired REST API for order management and inventory control. This 
 - Spring MVC, Bean Validation, Spring Data JPA, Hibernate and Actuator.
 - PostgreSQL 18, Flyway and Docker Compose.
 - JUnit Jupiter, AssertJ and Testcontainers 2 for integration testing.
-- Lombok 1.18.48 for selective Java boilerplate reduction; Spotless / google-java-format and GitHub Actions.
+- Lombok 1.18.48 and MapStruct 1.6.3 for selective code generation; Spotless / google-java-format and GitHub Actions.
 
 ## Requirements
 
@@ -31,7 +31,7 @@ set +a
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-Open `http://localhost:8080/actuator/health`. The health endpoint is the only HTTP endpoint currently provided.
+Open `http://localhost:8080/actuator/health` or use the catalog endpoints below after checking out the catalog branch (or after its PR has merged).
 
 ## Run locally (Windows PowerShell)
 
@@ -47,6 +47,26 @@ $env:DB_PASSWORD = "change-me-local-only"
 ```
 
 If you changed the values in `.env`, update the PowerShell variables accordingly. Docker Compose loads `.env` automatically; a locally running Java process **does not**.
+
+## Product catalog (current milestone)
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/v1/products` | Create a product (201 with Location) |
+| `GET` | `/api/v1/products/{id}` | Read product by ID |
+| `GET` | `/api/v1/products?active=true&page=0&size=20` | Filter and page (max 100 per page) |
+| `PUT` | `/api/v1/products/{id}` | Replace editable product details; SKU is immutable |
+| `POST` | `/api/v1/products/{id}/deactivate` | Idempotent deactivation (204) |
+
+Example:
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/products \
+  -H 'Content-Type: application/json' \
+  -d '{"sku":"kb-100","name":"Mechanical Keyboard","description":"Quiet switches","price":129.90}'
+```
+
+See [catalog API and persistence design](docs/catalog.md) for detailed constraints, response shapes, examples and trade-offs.
 
 ## Checks
 
@@ -72,7 +92,7 @@ Hibernate verifies the schema (`ddl-auto=validate`); Flyway will own DDL changes
 ## Development roadmap
 
 1. **Foundation:** build, configurations, formatting, local PostgreSQL, CI and a database-backed smoke test.
-2. **Catalog:** product constraints, Flyway migrations, JPA, records/DTOs, MapStruct, Bean Validation and explicit exceptions.
+2. **Catalog (PR #6):** product constraints, Flyway migrations, JPA, records/DTOs, MapStruct, Bean Validation and explicit exceptions.
 3. **Inventory and ordering:** transaction boundaries, locking, rollback and state transitions.
 4. **Security and resilience:** Spring Security OAuth2 resource server, authorization, idempotency and Problem Details.
 5. **Operations:** application Dockerfile, metrics, structured logs and performance review.
@@ -88,7 +108,7 @@ Lombok is configured with an explicit Maven annotation-processor path (required 
 - Use focused annotations such as `@Getter`, `@NoArgsConstructor(access = AccessLevel.PROTECTED)` and `@RequiredArgsConstructor` where useful.
 - Do **not** put `@Data` on JPA entities: the generated setters, equality, hash code and `toString` may undermine invariants or traverse lazy relationships.
 - Keep business-state mutations in explicit domain methods. Do not use `@Setter` indiscriminately on entities.
-- MapStruct remains responsible for DTO mapping; when we add it, configure its annotation processor together with Lombok and its binding adapter where applicable.
+- MapStruct is responsible for entity-to-DTO mapping. Its annotation processor uses `lombok-mapstruct-binding` alongside Lombok.
 
 ## Working agreements
 
