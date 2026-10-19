@@ -2,6 +2,7 @@ package io.github.josepauloferreira.orderflow.ordering.application;
 
 import io.github.josepauloferreira.orderflow.catalog.domain.Product;
 import io.github.josepauloferreira.orderflow.inventory.application.StockService;
+import io.github.josepauloferreira.orderflow.common.observability.DomainMetrics;
 import io.github.josepauloferreira.orderflow.inventory.domain.InactiveProductException;
 import io.github.josepauloferreira.orderflow.ordering.api.dto.CreateOrderRequest;
 import io.github.josepauloferreira.orderflow.ordering.api.dto.OrderResponse;
@@ -35,6 +36,7 @@ public class OrderService {
   private final StockService stockService;
   private final OrderRepository orderRepository;
   private final OrderIdempotencyRepository idempotency;
+  private final DomainMetrics metrics;
 
   public record CreateResult(OrderResponse order, boolean created) {}
 
@@ -73,7 +75,9 @@ public class OrderService {
     String digest = digest(ids, requested);
     UUID alreadyCreated = idempotency.claim(customerSubject, idempotencyKey, digest);
     if (alreadyCreated != null) {
-      return new CreateResult(findById(alreadyCreated, customerSubject, false), false);
+      var prior = findById(alreadyCreated, customerSubject, false);
+      metrics.orderReplayed();
+      return new CreateResult(prior, false);
     }
 
     // All product locks are acquired in ascending UUID order.
@@ -93,6 +97,7 @@ public class OrderService {
       stockService.consume(entry.getKey().getId(), entry.getValue(), order.getId());
     }
     idempotency.complete(customerSubject, idempotencyKey, order.getId());
+    metrics.orderCreated();
     return new CreateResult(OrderResponse.from(order), true);
   }
 
@@ -120,6 +125,7 @@ public class OrderService {
       stockService.restore(line.getProductId(), line.getQuantity(), id);
     }
     order.cancel();
+    metrics.orderCancelled();
   }
 
   private static void authorize(
