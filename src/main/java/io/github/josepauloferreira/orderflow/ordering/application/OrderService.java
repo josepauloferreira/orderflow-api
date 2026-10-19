@@ -1,8 +1,8 @@
 package io.github.josepauloferreira.orderflow.ordering.application;
 
 import io.github.josepauloferreira.orderflow.catalog.domain.Product;
-import io.github.josepauloferreira.orderflow.inventory.application.StockService;
 import io.github.josepauloferreira.orderflow.common.observability.DomainMetrics;
+import io.github.josepauloferreira.orderflow.inventory.application.StockService;
 import io.github.josepauloferreira.orderflow.inventory.domain.InactiveProductException;
 import io.github.josepauloferreira.orderflow.ordering.api.dto.CreateOrderRequest;
 import io.github.josepauloferreira.orderflow.ordering.api.dto.OrderResponse;

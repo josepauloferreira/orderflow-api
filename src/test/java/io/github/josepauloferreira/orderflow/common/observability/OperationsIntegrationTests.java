@@ -59,7 +59,8 @@ class OperationsIntegrationTests {
             .andExpect(status().isOk())
             .andReturn();
 
-    assertThat(result.getResponse().getContentAsString()).contains("orderflow_orders_created_total");
+    assertThat(result.getResponse().getContentAsString())
+        .contains("orderflow_orders_created_total");
     assertThat(registry.find("orderflow.orders.created").counter()).isNotNull();
   }
 

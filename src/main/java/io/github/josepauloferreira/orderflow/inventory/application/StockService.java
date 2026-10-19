@@ -2,8 +2,8 @@ package io.github.josepauloferreira.orderflow.inventory.application;
 
 import io.github.josepauloferreira.orderflow.catalog.domain.Product;
 import io.github.josepauloferreira.orderflow.catalog.domain.ProductNotFoundException;
-import io.github.josepauloferreira.orderflow.common.observability.DomainMetrics;
 import io.github.josepauloferreira.orderflow.catalog.infrastructure.ProductRepository;
+import io.github.josepauloferreira.orderflow.common.observability.DomainMetrics;
 import io.github.josepauloferreira.orderflow.inventory.api.dto.StockAdjustmentRequest;
 import io.github.josepauloferreira.orderflow.inventory.api.dto.StockResponse;
 import io.github.josepauloferreira.orderflow.inventory.domain.InsufficientStockException;

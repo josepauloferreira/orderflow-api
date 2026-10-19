@@ -7,8 +7,8 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
- * Counts only committed business changes. No user IDs, SKUs, or order UUIDs
- * appear as labels, avoiding high-cardinality time series.
+ * Counts only committed business changes. No user IDs, SKUs, or order UUIDs appear as labels,
+ * avoiding high-cardinality time series.
  */
 @Component
 public class DomainMetrics {

@@ -15,8 +15,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Adds one safe request identifier to every response and to SLF4J MDC.
- * Never logs credentials, request bodies, or a raw untrusted header.
+ * Adds one safe request identifier to every response and to SLF4J MDC. Never logs credentials,
+ * request bodies, or a raw untrusted header.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
