@@ -11,7 +11,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import io.github.josepauloferreira.orderflow.inventory.domain.InsufficientStockException;
 import io.github.josepauloferreira.orderflow.ordering.api.dto.CreateOrderRequest;
 import io.github.josepauloferreira.orderflow.ordering.application.OrderService;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -69,7 +68,11 @@ class InventoryOrderIntegrationTests {
 
     assertThat(jdbc.queryForObject("SELECT count(*) FROM stock_movements", Long.class))
         .isEqualTo(1);
-    assertThat(jdbc.queryForObject("SELECT available_quantity FROM inventory WHERE product_id = ?", Integer.class, product))
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT available_quantity FROM inventory WHERE product_id = ?",
+                Integer.class,
+                product))
         .isEqualTo(4);
   }
 
@@ -81,7 +84,8 @@ class InventoryOrderIntegrationTests {
     mvc.perform(
             post(stockUrl(product) + "/adjustments")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""
+                .content(
+                    """
                     {"delta":-3,"reason":"Damage"}
                     """))
         .andExpect(status().isConflict())
@@ -112,7 +116,8 @@ class InventoryOrderIntegrationTests {
     mvc.perform(
             put("/api/v1/products/" + first)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""
+                .content(
+                    """
                     {"name":"New name","description":null,"price":199.00}
                     """))
         .andExpect(status().isOk());
@@ -120,19 +125,17 @@ class InventoryOrderIntegrationTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.totalAmount").value(37.5));
 
-    mvc.perform(post("/api/v1/orders/" + order + "/cancel"))
-        .andExpect(status().isNoContent());
-    mvc.perform(post("/api/v1/orders/" + order + "/cancel"))
-        .andExpect(status().isNoContent());
+    mvc.perform(post("/api/v1/orders/" + order + "/cancel")).andExpect(status().isNoContent());
+    mvc.perform(post("/api/v1/orders/" + order + "/cancel")).andExpect(status().isNoContent());
 
     assertThat(available(first)).isEqualTo(5);
     assertThat(available(second)).isEqualTo(1);
     assertThat(count("stock_movements")).isEqualTo(6);
-    assertThat(jdbc.queryForObject(
-            "SELECT count(*) FROM stock_movements WHERE kind = 'ORDER_CANCELLED'", Long.class))
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT count(*) FROM stock_movements WHERE kind = 'ORDER_CANCELLED'", Long.class))
         .isEqualTo(2);
-    mvc.perform(get("/api/v1/orders/" + order))
-        .andExpect(jsonPath("$.status").value("CANCELLED"));
+    mvc.perform(get("/api/v1/orders/" + order)).andExpect(jsonPath("$.status").value("CANCELLED"));
   }
 
   @Test
@@ -197,8 +200,7 @@ class InventoryOrderIntegrationTests {
   void concurrentOrdersCompetingForLastUnitNeverOversell() throws Exception {
     UUID product = createProduct("STOCK-9", "20.00");
     adjust(product, 1, "Initial delivery");
-    var request =
-        new CreateOrderRequest(List.of(new CreateOrderRequest.Item(product, 1)));
+    var request = new CreateOrderRequest(List.of(new CreateOrderRequest.Item(product, 1)));
     var start = new CountDownLatch(1);
     var ready = new CountDownLatch(2);
 
@@ -214,8 +216,9 @@ class InventoryOrderIntegrationTests {
 
     assertThat(available(product)).isZero();
     assertThat(count("customer_orders")).isEqualTo(1);
-    assertThat(jdbc.queryForObject(
-            "SELECT count(*) FROM stock_movements WHERE kind = 'ORDER_CONFIRMED'", Long.class))
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT count(*) FROM stock_movements WHERE kind = 'ORDER_CONFIRMED'", Long.class))
         .isEqualTo(1);
   }
 
@@ -273,8 +276,7 @@ class InventoryOrderIntegrationTests {
         .andExpect(status().isOk());
   }
 
-  private UUID createOrder(UUID first, int qtyFirst, UUID second, int qtySecond)
-      throws Exception {
+  private UUID createOrder(UUID first, int qtyFirst, UUID second, int qtySecond) throws Exception {
     var response =
         mvc.perform(
                 post("/api/v1/orders")

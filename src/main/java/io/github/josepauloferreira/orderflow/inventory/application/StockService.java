@@ -32,8 +32,7 @@ public class StockService {
       throw new ProductNotFoundException(productId);
     }
     return new StockResponse(
-        productId,
-        stockRepository.findById(productId).map(Stock::getAvailableQuantity).orElse(0));
+        productId, stockRepository.findById(productId).map(Stock::getAvailableQuantity).orElse(0));
   }
 
   @Transactional
@@ -52,7 +51,11 @@ public class StockService {
     stockRepository.save(stock);
     movementRepository.save(
         StockMovement.record(
-            productId, null, MovementKind.MANUAL_ADJUSTMENT, request.delta(), request.reason().strip()));
+            productId,
+            null,
+            MovementKind.MANUAL_ADJUSTMENT,
+            request.delta(),
+            request.reason().strip()));
     return new StockResponse(productId, stock.getAvailableQuantity());
   }
 
@@ -60,8 +63,7 @@ public class StockService {
   // Product locks MUST already be held in ascending UUID order.
   @Transactional(propagation = Propagation.MANDATORY)
   public void requireAvailable(UUID productId, int requested) {
-    int available =
-        stockRepository.findById(productId).map(Stock::getAvailableQuantity).orElse(0);
+    int available = stockRepository.findById(productId).map(Stock::getAvailableQuantity).orElse(0);
     if (available < requested) {
       throw new InsufficientStockException(productId, available, requested);
     }
@@ -88,7 +90,8 @@ public class StockService {
     Stock stock =
         stockRepository
             .findById(productId)
-            .orElseThrow(() -> new IllegalStateException("Missing stock row for product " + productId));
+            .orElseThrow(
+                () -> new IllegalStateException("Missing stock row for product " + productId));
     stock.change(delta);
     movementRepository.save(StockMovement.record(productId, orderId, kind, delta, null));
   }

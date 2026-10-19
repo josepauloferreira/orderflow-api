@@ -24,19 +24,16 @@ class StockTest {
     var stock = Stock.empty(id);
     stock.change(2);
 
-    assertThatThrownBy(() -> stock.change(-3))
-        .isInstanceOf(InsufficientStockException.class);
+    assertThatThrownBy(() -> stock.change(-3)).isInstanceOf(InsufficientStockException.class);
     assertThat(stock.getAvailableQuantity()).isEqualTo(2);
   }
 
   @Test
   void rejectsZeroAndOverflow() {
     var stock = Stock.empty(UUID.randomUUID());
-    assertThatThrownBy(() -> stock.change(0))
-        .isInstanceOf(InvalidStockAdjustmentException.class);
+    assertThatThrownBy(() -> stock.change(0)).isInstanceOf(InvalidStockAdjustmentException.class);
     stock.change(Integer.MAX_VALUE);
-    assertThatThrownBy(() -> stock.change(1))
-        .isInstanceOf(InvalidStockAdjustmentException.class);
+    assertThatThrownBy(() -> stock.change(1)).isInstanceOf(InvalidStockAdjustmentException.class);
     assertThat(stock.getAvailableQuantity()).isEqualTo(Integer.MAX_VALUE);
   }
 }

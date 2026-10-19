@@ -9,8 +9,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.UUID;
 
-public record CreateOrderRequest(
-    @NotEmpty @Size(max = 20) List<@NotNull @Valid Item> items) {
+public record CreateOrderRequest(@NotEmpty @Size(max = 20) List<@NotNull @Valid Item> items) {
 
   public record Item(@NotNull UUID productId, @NotNull @Min(1) @Max(1000) Integer quantity) {}
 }

@@ -55,9 +55,7 @@ public class CustomerOrder {
       order.lines.add(OrderLine.from(order, item.getKey(), item.getValue()));
     }
     order.totalAmount =
-        order.lines.stream()
-            .map(OrderLine::getLineTotal)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        order.lines.stream().map(OrderLine::getLineTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
     if (order.totalAmount.compareTo(MAX_TOTAL) > 0) {
       throw new InvalidOrderException("Order total exceeds supported precision");
     }

@@ -31,6 +31,10 @@ public record OrderResponse(
                         line.getLineTotal()))
             .toList();
     return new OrderResponse(
-        order.getId(), order.getStatus().name(), order.getTotalAmount(), order.getCreatedAt(), items);
+        order.getId(),
+        order.getStatus().name(),
+        order.getTotalAmount(),
+        order.getCreatedAt(),
+        items);
   }
 }
