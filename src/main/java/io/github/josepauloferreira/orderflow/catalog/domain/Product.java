@@ -66,7 +66,7 @@ public class Product {
     if (price == null
         || price.signum() <= 0
         || price.compareTo(MAX_PRICE) > 0
-        || price.stripTrailingZeros().scale() > 2) {
+        || price.scale() > 2) {
       throw new IllegalArgumentException(
           "Product price must be positive and have at most 2 decimals");
     }

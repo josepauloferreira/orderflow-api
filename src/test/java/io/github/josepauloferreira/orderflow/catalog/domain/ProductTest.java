@@ -30,6 +30,9 @@ class ProductTest {
     assertThatThrownBy(() -> Product.create("SKU-1", "Product", null, new BigDecimal("1.001")))
         .isInstanceOf(IllegalArgumentException.class);
     assertThatThrownBy(
+            () -> Product.create("SKU-1", "Product", null, new BigDecimal("1.000")))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(
             () -> Product.create("SKU-1", "Product", null, new BigDecimal("10000000000.00")))
         .isInstanceOf(IllegalArgumentException.class);
   }
