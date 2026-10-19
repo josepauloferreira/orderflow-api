@@ -2,14 +2,15 @@
 
 A production-inspired REST API for order management and inventory control. This repository is intentionally developed in **small, verifiable increments** to demonstrate maintainable Java backend engineering.
 
-> **Current status:** Inventory and orders are merged. JWT security and transactional idempotency are under review. Run with a trusted OIDC issuer; see [security documentation](docs/security-idempotency.md).
+> **Current status:** Core catalog, inventory, orders and JWT security are merged. Containerization and observability are in PR #9. The Compose stack is a **local/CI demo only**, not a production deployment.
 
 ## Stack
 
 - Java 25 LTS; Spring Boot 4.1.1; Maven 3.9.16 (Wrapper).
 - Spring MVC, Bean Validation, Spring Data JPA, Hibernate and Actuator.
-- PostgreSQL 18, Flyway and Docker Compose.
+- PostgreSQL 18, Flyway and Docker Compose, with non-root Java 25 Docker runtime.
 - JUnit Jupiter, AssertJ and Testcontainers 2 for integration testing.
+- Spring Boot Actuator, Micrometer/Prometheus, ECS structured container logs and request correlation.
 - Lombok 1.18.48 and MapStruct 1.6.3 for selective code generation; Spotless / google-java-format and GitHub Actions.
 
 ## Requirements
@@ -17,6 +18,18 @@ A production-inspired REST API for order management and inventory control. This 
 - JDK 25 installed and selected (`java -version`).
 - Docker Engine/Desktop with Compose. Docker is also required by integration tests.
 - Git. A system Maven installation is **not** required.
+
+## Containerized full stack (Docker only)
+
+The easiest way to run all three services and exercise signed JWTs is:
+
+```bash
+cp .env.example .env
+docker compose --profile app --profile auth up -d --build --wait
+curl -fsS http://127.0.0.1:8080/actuator/health/readiness
+```
+
+See [the operations runbook](docs/operations.md) and [local Keycloak tokens](docs/security-idempotency.md). This development stack publishes ports to loopback only.
 
 ## Run locally (macOS / Linux / bash)
 
@@ -98,8 +111,8 @@ The integration tests start their **own PostgreSQL container** and supply a mock
 
 - `src/main/resources/application.yml`: common, environment-independent settings.
 - `src/main/resources/application-local.yml`: local datasource configured through `DB_URL`, `DB_USERNAME` and `DB_PASSWORD`.
-- `compose.yaml`: database bound to `127.0.0.1` only, with a healthcheck and persistent volume.
-- `src/main/resources/db/migration/`: versioned Flyway SQL migrations (first domain migration belongs to the catalog phase).
+- `compose.yaml`: database, optional API container and local Keycloak demo; ports bound to `127.0.0.1` only.
+- `src/main/resources/db/migration/`: versioned Flyway SQL migrations, including tuned catalog pagination indexes.
 - `.env.example`: **example development values, not production credentials**. Copy to `.env`, which is ignored by Git.
 
 Hibernate verifies the schema (`ddl-auto=validate`); Flyway will own DDL changes as migrations are introduced.
@@ -109,11 +122,11 @@ Hibernate verifies the schema (`ddl-auto=validate`); Flyway will own DDL changes
 1. **Foundation:** build, configurations, formatting, local PostgreSQL, CI and a database-backed smoke test.
 2. **Catalog (PR #6):** product constraints, Flyway migrations, JPA, records/DTOs, MapStruct, Bean Validation and explicit exceptions.
 3. **Inventory and ordering (PR #7):** transaction boundaries, deterministic row locking, rollback and state transitions.
-4. **Security and resilience (in progress):** Spring Security OAuth2 resource server, authorization, idempotency and Problem Details.
-5. **Operations:** application Dockerfile, metrics, structured logs and performance review.
+4. **Security and resilience (PR #8):** Spring Security OAuth2 resource server, authorization, idempotency and Problem Details.
+5. **Operations (PR #9):** non-root application Dockerfile, metrics, structured logs, correlation IDs and container smoke tests.
 6. **Engineering review:** API documentation, architecture checks, examples and final validation.
 
-See [ADR 0001](docs/adr/0001-modular-monolith.md) for modular architecture and [ADR 0002](docs/adr/0002-flyway-schema-first.md) for our migration-driven, schema-first persistence policy. No business endpoints are claimed complete until their behavior and tests exist.
+See [ADR 0001](docs/adr/0001-modular-monolith.md) for modular architecture, [ADR 0002](docs/adr/0002-flyway-schema-first.md) for schema-first persistence and [ADR 0005](docs/adr/0005-operability-observability.md) for operational decisions. No business endpoints are claimed complete until their behavior and tests exist.
 
 ## Lombok guidelines
 
