@@ -4,7 +4,6 @@ import io.github.josepauloferreira.orderflow.catalog.api.dto.CreateProductReques
 import io.github.josepauloferreira.orderflow.catalog.api.dto.ProductResponse;
 import io.github.josepauloferreira.orderflow.catalog.api.dto.UpdateProductRequest;
 import io.github.josepauloferreira.orderflow.catalog.application.ProductService;
-import io.github.josepauloferreira.orderflow.catalog.api.ProductEtag;
 import io.github.josepauloferreira.orderflow.common.api.PagedResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -75,6 +74,8 @@ public class ProductController {
       description = "ADMIN only. Requires a strong If-Match ETag from GET; rejects stale writes with 412. SKU cannot be changed.",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponse(responseCode = "404", description = "Product not found")
+  @ApiResponse(responseCode = "428", description = "Missing If-Match precondition")
+  @ApiResponse(responseCode = "412", description = "Stale product version")
   @PutMapping("/{id}")
   public ResponseEntity<ProductResponse> update(
       @PathVariable UUID id,
@@ -90,6 +91,8 @@ public class ProductController {
       description = "ADMIN only. Requires a strong If-Match ETag; repeated deactivation with the current version has no second effect.",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponse(responseCode = "204", description = "Product is inactive")
+  @ApiResponse(responseCode = "428", description = "Missing If-Match precondition")
+  @ApiResponse(responseCode = "412", description = "Stale product version")
   @PostMapping("/{id}/deactivate")
   public ResponseEntity<Void> deactivate(
       @PathVariable UUID id,
