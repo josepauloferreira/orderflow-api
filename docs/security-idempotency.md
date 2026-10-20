@@ -61,6 +61,21 @@ Content-Type: application/json
 
 The implementation uses a database uniqueness guarantee and transactional synchronization, not an in-memory map or a preflight `existsBy` check, so it also works across multiple API instances connected to the same PostgreSQL cluster.
 
+## Idempotency retention policy
+
+**No automatic key deletion is implemented.** The system currently retains committed `order_idempotency` rows indefinitely to guarantee that a historical key cannot silently create a second order. This is a deliberate safety constraint, not a scalable long-term retention design.
+
+Before enabling cleanup, the business must define a retry horizon, communicate expiration behavior to all clients and decide whether expired keys may ever create another order. Blind deletion is unsafe: it removes replay protection while the original order still exists. Track the number and age of keys first:
+
+```sql
+SELECT count(*) AS keys_total,
+       count(*) FILTER (WHERE created_at < now() - interval '90 days') AS older_than_90_days,
+       min(created_at) AS oldest_key
+FROM order_idempotency;
+```
+
+This query is observational; **do not turn it into an automated DELETE** without an approved retention contract. See [ADR 0006](adr/0006-http-concurrency-and-retention.md).
+
 ## Migration caveat
 
 `V5__order_ownership_idempotency.sql` refuses to apply if old orders exist without ownership. Since this is a learning repository without production data, the documented migration is safe for a clean database. Do **not** force this migration through on a populated production database without a verified owner backfill plan.

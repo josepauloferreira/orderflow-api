@@ -32,15 +32,30 @@ Use Swagger UI's Authorize feature with a valid bearer token or send `Authorizat
 | Method | Endpoint | Requirements | Success |
 | --- | --- | --- | --- |
 | GET | `/api/v1/products` | Public; `active`, `page`, `size` filters | 200 |
-| GET | `/api/v1/products/{id}` | Public | 200 |
+| GET | `/api/v1/products/{id}` | Public; response includes strong ETag | 200 |
 | POST | `/api/v1/products` | ADMIN; validated product body | 201 + Location |
-| PUT | `/api/v1/products/{id}` | ADMIN; editable details, immutable SKU | 200 |
-| POST | `/api/v1/products/{id}/deactivate` | ADMIN; idempotent | 204 |
+| PUT | `/api/v1/products/{id}` | ADMIN; strong If-Match required; SKU immutable | 200 / 412 / 428 |
+| POST | `/api/v1/products/{id}/deactivate` | ADMIN; strong If-Match required | 204 / 412 / 428 |
 | GET | `/api/v1/products/{productId}/stock` | ADMIN | 200 |
 | POST | `/api/v1/products/{productId}/stock/adjustments` | ADMIN; signed delta and reason | 200 |
 | POST | `/api/v1/orders` | CUSTOMER; Idempotency-Key | 201 original / 200 replay |
 | GET | `/api/v1/orders/{id}` | Owner or ADMIN | 200 |
 | POST | `/api/v1/orders/{id}/cancel` | Owner or ADMIN; idempotent | 204 |
+
+### Conditional product edits (optimistic locking)
+
+The `GET /api/v1/products/{id}` response contains a strong `ETag` header such as `"0"`. `POST /api/v1/products` also returns an ETag. Supply that exact value when changing or deactivating the product:
+
+```http
+PUT /api/v1/products/<product-uuid>
+Authorization: Bearer <admin-token>
+If-Match: "0"
+Content-Type: application/json
+
+{"name":"New name","description":null,"price":119.90}
+```
+
+A successful PUT returns `200 OK` and a **new ETag**. An old version fails with `412 STALE_PRODUCT_VERSION`, a missing header with `428 PRECONDITION_REQUIRED` and a weak/malformed value with `400 INVALID_IF_MATCH`. Deactivation is idempotent when repeated with the *current* ETag, and does not change version if already inactive. An outdated ETag still fails with 412, as required by conditional-request semantics. PostgreSQL `V7` stores a numeric optimistic-lock column; Hibernate `@Version` guards against races between the version check and transaction flush.
 
 ### Idempotent order
 
@@ -57,7 +72,7 @@ The initial request confirms a paid-independent order and snapshots product pric
 
 ### Error conventions
 
-Domain errors generally return RFC 9457 Problem Details with a stable `code` extension: `DUPLICATE_SKU`, `PRODUCT_NOT_FOUND`, `ORDER_NOT_FOUND`, `INSUFFICIENT_STOCK`, `PRODUCT_INACTIVE`, `IDEMPOTENCY_CONFLICT`, `VALIDATION_ERROR`, `INVALID_PAGINATION`. Security failures return `UNAUTHORIZED` (401) or `FORBIDDEN` (403). **Framework-level errors are not yet guaranteed to have exactly the same representation.**
+Domain and common MVC errors are handled by one RFC 9457 Problem Details advice with a stable `code` extension: `DUPLICATE_SKU`, `PRODUCT_NOT_FOUND`, `ORDER_NOT_FOUND`, `INSUFFICIENT_STOCK`, `PRODUCT_INACTIVE`, `IDEMPOTENCY_CONFLICT`, `VALIDATION_ERROR`, `INVALID_PAGINATION`. Security failures return `UNAUTHORIZED` (401) or `FORBIDDEN` (403). Common framework errors including malformed JSON, invalid path types, unsupported methods/media types, and missing headers now use Problem Details. Unknown/unhandled failures still follow Spring's default 500 path and are deliberately not wrapped by a broad catch-all.
 
 ## Automatic contract checks
 

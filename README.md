@@ -2,7 +2,7 @@
 
 A production-inspired REST API for order management and inventory control. This repository is intentionally developed in **small, verifiable increments** to demonstrate maintainable Java backend engineering.
 
-> **Current status:** Catalog, inventory, orders, security and observability are integrated. OpenAPI, architecture tests and the final engineering review are underway. The Compose stack is a **local/CI demo only**, not a production deployment.
+> **Current status:** The original six milestones are integrated. Business hardening (optimistic catalog editing, consistent HTTP errors and operational migration/idempotency policies) is under review. The Compose stack is a **local/CI demo only**, not production.
 
 ## Stack
 
@@ -75,10 +75,10 @@ With the `local`, `container` or `test` profile, the generated API description i
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `POST` | `/api/v1/products` | Create a product (201 with Location) |
-| `GET` | `/api/v1/products/{id}` | Read product by ID |
+| `GET` | `/api/v1/products/{id}` | Read product by ID, including its ETag |
 | `GET` | `/api/v1/products?active=true&page=0&size=20` | Filter and page (max 100 per page) |
-| `PUT` | `/api/v1/products/{id}` | Replace editable product details; SKU is immutable |
-| `POST` | `/api/v1/products/{id}/deactivate` | Idempotent deactivation (204) |
+| `PUT` | `/api/v1/products/{id}` | Conditional edit (`If-Match` required, 428/412); SKU immutable |
+| `POST` | `/api/v1/products/{id}/deactivate` | Conditional deactivation (`If-Match` required, 204) |
 
 Example:
 
@@ -88,6 +88,8 @@ curl -i -X POST http://localhost:8080/api/v1/products \
   -H 'Content-Type: application/json' \
   -d '{"sku":"kb-100","name":"Mechanical Keyboard","description":"Quiet switches","price":129.90}'
 ```
+
+For concurrent administrator edits, first GET the product, copy its strong `ETag`, then send `If-Match: <etag>` with PUT or deactivation. Stale versions receive 412; missing preconditions receive 428. See [hardening ADR](docs/adr/0006-http-concurrency-and-retention.md).
 
 See [catalog design](docs/catalog.md), [inventory/ordering design](docs/inventory-orders.md) and [security/idempotency](docs/security-idempotency.md) for implementation details.
 

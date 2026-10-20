@@ -7,10 +7,10 @@ The product catalog is the first executable business slice of OrderFlow. It deli
 - `POST /api/v1/products`: accepts `sku`, `name`, optional `description`, and `price`; returns **201 Created**, a `Location` header and `ProductResponse`.
 - `GET /api/v1/products/{id}`: returns the product or **404**.
 - `GET /api/v1/products`: optional `active=true|false`, `page` (default `0`) and `size` (default `20`, range `1..100`). Ordered by creation time descending, then ID; returns a stable `PagedResponse` record instead of serializing Spring Data's `PageImpl` directly.
-- `PUT /api/v1/products/{id}`: fully replaces the editable subset (`name`, `description`, `price`). SKU is immutable and excluded from this request contract.
-- `POST /api/v1/products/{id}/deactivate`: an idempotent domain command with **204 No Content**.
+- `PUT /api/v1/products/{id}`: fully replaces the editable subset (`name`, `description`, `price`). A strong `If-Match` ETag is mandatory and prevents lost updates. SKU is immutable.
+- `POST /api/v1/products/{id}/deactivate`: conditionally deactivates the product with `If-Match`; repeated commands using its *current* version return **204 No Content**.
 
-No authorization has been implemented **yet**. The API is not intended for public deployment until the security milestone.
+Public catalog reads require no JWT; catalog mutations require an authenticated `ADMIN` JWT. A trusted identity provider is mandatory outside the local demo.
 
 ## Example creation
 
@@ -30,7 +30,7 @@ The server normalizes SKU to `KB-100`, trims names/descriptions and returns the 
 
 ## Persistence boundaries
 
-`V1__create_products.sql` is the only schema definition for the product table. PostgreSQL enforces:
+`V1__create_products.sql` defines product creation and `V7__products_optimistic_version.sql` adds a nonnegative `BIGINT version` for conditional updates. Flyway remains the only DDL source. PostgreSQL enforces:
 
 - UUID primary key, unique uppercase SKU with restricted syntax;
 - non-empty product name;
@@ -54,4 +54,4 @@ The product entity is intentionally **not** a generic CRUD data bag: `create`, `
 
 ## Deferred work
 
-Optimistic concurrency for product editing (for example, an ETag / `If-Match` contract), security, order/inventory rules and full OpenAPI integration are deliberately excluded from this slice. Before allowing concurrent administrative writes in production, a clear lost-update policy must be established.
+Subsequent milestones implemented JWT security, inventory/ordering, OpenAPI, and strong ETag/If-Match optimistic version checks. See [the API reference](api-reference.md) and [ADR 0006](adr/0006-http-concurrency-and-retention.md). Client libraries still need explicit retry UX for 412 responses.

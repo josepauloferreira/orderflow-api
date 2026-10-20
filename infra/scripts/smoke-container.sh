@@ -74,6 +74,21 @@ assert_status 201 "$(http_status --request POST "$api/api/v1/products" \
 product="$(jq --raw-output '.id' < "$scratch")"
 [[ "$product" =~ ^[0-9a-f-]{36}$ ]]
 
+# A current ETag is required to edit a product. Reusing an old version fails.
+assert_status 200 "$(http_status --request PUT "$api/api/v1/products/$product" \
+  --header "Authorization: Bearer $admin" \
+  --header 'If-Match: "0"' \
+  --header 'Content-Type: application/json' \
+  --data '{"name":"Updated smoke product","description":null,"price":20.00}')"
+jq --exit-status '.version == 1' "$scratch" >/dev/null
+assert_status 412 "$(http_status --request PUT "$api/api/v1/products/$product" \
+  --header "Authorization: Bearer $admin" \
+  --header 'If-Match: "0"' \
+  --header 'Content-Type: application/json' \
+  --data '{"name":"Stale update","description":null,"price":20.00}')"
+jq --exit-status '.code == "STALE_PRODUCT_VERSION"' "$scratch" >/dev/null
+
+
 assert_status 200 "$(http_status --request POST "$api/api/v1/products/$product/stock/adjustments" \
   --header "Authorization: Bearer $admin" \
   --header 'Content-Type: application/json' \
