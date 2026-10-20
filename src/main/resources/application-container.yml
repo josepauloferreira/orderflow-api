@@ -8,3 +8,9 @@ logging:
   structured:
     format:
       console: ecs
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
