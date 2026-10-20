@@ -12,7 +12,7 @@ public final class ProductEtag {
   private ProductEtag() {}
 
   public static String of(long version) {
-    return """ + version + """;
+    return "\"" + version + "\"";
   }
 
   public static long require(String ifMatch) {
