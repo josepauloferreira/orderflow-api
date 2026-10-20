@@ -5,3 +5,9 @@ spring:
         jwt:
           issuer-uri: https://issuer.example.test/realms/orderflow
           jwk-set-uri: https://issuer.example.test/realms/orderflow/protocol/openid-connect/certs
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

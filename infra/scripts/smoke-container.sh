@@ -56,6 +56,10 @@ if [[ -z "$admin" || -z "$customer" ]]; then
 fi
 
 # Health/public catalog work without a token, but sensitive metrics do not.
+assert_status 200 "$(http_status "$api/v3/api-docs")"
+jq --exit-status '.paths["/api/v1/orders"].post.security[0].bearerAuth == []' "$scratch" >/dev/null
+jq --exit-status '.paths["/api/v1/products"].get != null' "$scratch" >/dev/null
+
 assert_status 200 "$(http_status "$api/api/v1/products")"
 assert_status 401 "$(http_status "$api/actuator/prometheus")"
 assert_status 403 "$(http_status --header "Authorization: Bearer $customer" "$api/actuator/prometheus")"

@@ -31,6 +31,14 @@ public class SecurityConfig {
             auth ->
                 auth.requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**")
                     .permitAll()
+                    .requestMatchers(
+                        HttpMethod.GET,
+                        "/v3/api-docs",
+                        "/v3/api-docs/**",
+                        "/v3/api-docs.yaml",
+                        "/swagger-ui.html",
+                        "/swagger-ui/**")
+                    .permitAll()
                     .requestMatchers(HttpMethod.GET, "/actuator/prometheus", "/actuator/info")
                     .hasRole("ADMIN")
                     .requestMatchers(HttpMethod.GET, "/api/v1/products")

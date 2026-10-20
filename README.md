@@ -2,7 +2,7 @@
 
 A production-inspired REST API for order management and inventory control. This repository is intentionally developed in **small, verifiable increments** to demonstrate maintainable Java backend engineering.
 
-> **Current status:** Core catalog, inventory, orders and JWT security are merged. Containerization and observability are in PR #9. The Compose stack is a **local/CI demo only**, not a production deployment.
+> **Current status:** Catalog, inventory, orders, security and observability are integrated. OpenAPI, architecture tests and the final engineering review are underway. The Compose stack is a **local/CI demo only**, not a production deployment.
 
 ## Stack
 
@@ -10,7 +10,8 @@ A production-inspired REST API for order management and inventory control. This 
 - Spring MVC, Bean Validation, Spring Data JPA, Hibernate and Actuator.
 - PostgreSQL 18, Flyway and Docker Compose, with non-root Java 25 Docker runtime.
 - JUnit Jupiter, AssertJ and Testcontainers 2 for integration testing.
-- Spring Boot Actuator, Micrometer/Prometheus, ECS structured container logs and request correlation.
+- Spring Boot Actuator, Micrometer/Prometheus, ECS structured logs, request correlation and springdoc OpenAPI 3.1.1.
+- ArchUnit 1.5.1 for executable architecture constraints.
 - Lombok 1.18.48 and MapStruct 1.6.3 for selective code generation; Spotless / google-java-format and GitHub Actions.
 
 ## Requirements
@@ -29,7 +30,7 @@ docker compose --profile app --profile auth up -d --build --wait
 curl -fsS http://127.0.0.1:8080/actuator/health/readiness
 ```
 
-See [the operations runbook](docs/operations.md) and [local Keycloak tokens](docs/security-idempotency.md). This development stack publishes ports to loopback only.
+See [the operations runbook](docs/operations.md), [the API reference](docs/api-reference.md) and [local Keycloak tokens](docs/security-idempotency.md). This development stack publishes ports to loopback only.
 
 ## Run locally (macOS / Linux / bash)
 
@@ -65,7 +66,11 @@ $env:DB_PASSWORD = "change-me-local-only"
 
 If you changed the values in `.env`, update the PowerShell variables accordingly. Docker Compose loads `.env` automatically; a locally running Java process **does not**.
 
-## Product catalog (current milestone)
+## API reference
+
+With the `local`, `container` or `test` profile, the generated API description is at `/v3/api-docs` (JSON), `/v3/api-docs.yaml` (YAML) and `/swagger-ui/index.html` (interactive UI). Documentation endpoints are **disabled by default** in other profiles, and only `/api/v1/**` operations are included. Consult [the API reference](docs/api-reference.md) for authentication, status codes, and idempotency examples.
+
+## Product catalog
 
 | Method | Path | Purpose |
 | --- | --- | --- |
@@ -124,7 +129,7 @@ Hibernate verifies the schema (`ddl-auto=validate`); Flyway will own DDL changes
 3. **Inventory and ordering (PR #7):** transaction boundaries, deterministic row locking, rollback and state transitions.
 4. **Security and resilience (PR #8):** Spring Security OAuth2 resource server, authorization, idempotency and Problem Details.
 5. **Operations (PR #9):** non-root application Dockerfile, metrics, structured logs, correlation IDs and container smoke tests.
-6. **Engineering review:** API documentation, architecture checks, examples and final validation.
+6. **Engineering review (PR #10):** generated OpenAPI, architecture constraints, contract tests, risk register and final validation.
 
 See [ADR 0001](docs/adr/0001-modular-monolith.md) for modular architecture, [ADR 0002](docs/adr/0002-flyway-schema-first.md) for schema-first persistence and [ADR 0005](docs/adr/0005-operability-observability.md) for operational decisions. No business endpoints are claimed complete until their behavior and tests exist.
 
