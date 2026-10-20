@@ -4,6 +4,7 @@ import io.github.josepauloferreira.orderflow.ordering.api.dto.CreateOrderRequest
 import io.github.josepauloferreira.orderflow.ordering.api.dto.OrderResponse;
 import io.github.josepauloferreira.orderflow.ordering.application.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -37,7 +38,7 @@ public class OrderController {
   public ResponseEntity<OrderResponse> create(
       @Valid @RequestBody CreateOrderRequest request,
       @RequestHeader("Idempotency-Key") String idempotencyKey,
-      Authentication authentication) {
+      @Parameter(hidden = true) Authentication authentication) {
     var result = orderService.create(request, authentication.getName(), idempotencyKey);
     var uri = URI.create("/api/v1/orders/" + result.order().id());
     if (result.created()) {
@@ -49,14 +50,14 @@ public class OrderController {
   @Operation(summary = "Get a historical order", description = "Order owner or ADMIN only. Prices are snapshotted at confirmation.", security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponse(responseCode = "403", description = "Not the owner or an administrator")
   @GetMapping("/{id}")
-  public OrderResponse findById(@PathVariable UUID id, Authentication authentication) {
+  public OrderResponse findById(@PathVariable UUID id, @Parameter(hidden = true) Authentication authentication) {
     return orderService.findById(id, authentication.getName(), hasAdminRole(authentication));
   }
 
   @Operation(summary = "Cancel a confirmed order", description = "Order owner or ADMIN only. Idempotently restores stock once.", security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponse(responseCode = "204", description = "Order cancelled or previously cancelled")
   @PostMapping("/{id}/cancel")
-  public ResponseEntity<Void> cancel(@PathVariable UUID id, Authentication authentication) {
+  public ResponseEntity<Void> cancel(@PathVariable UUID id, @Parameter(hidden = true) Authentication authentication) {
     orderService.cancel(id, authentication.getName(), hasAdminRole(authentication));
     return ResponseEntity.noContent().build();
   }
