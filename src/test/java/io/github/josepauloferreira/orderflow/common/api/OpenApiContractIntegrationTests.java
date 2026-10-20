@@ -52,15 +52,19 @@ class OpenApiContractIntegrationTests {
     assertThat(paths.path("/api/v1/orders/{id}").has("get")).isTrue();
     assertThat(paths.path("/api/v1/orders/{id}/cancel").has("post")).isTrue();
 
-    assertThat(doc.path("components").path("securitySchemes").path("bearerAuth").path("scheme").asText())
+    assertThat(
+            doc.path("components")
+                .path("securitySchemes")
+                .path("bearerAuth")
+                .path("scheme")
+                .asText())
         .isEqualTo("bearer");
 
     assertThat(paths.path("/api/v1/orders").path("post").path("security").toString())
         .contains("bearerAuth");
     assertThat(paths.path("/api/v1/products").path("post").path("security").toString())
         .contains("bearerAuth");
-    assertThat(paths.path("/api/v1/products").path("get").path("security").isEmpty())
-        .isTrue();
+    assertThat(paths.path("/api/v1/products").path("get").path("security").isEmpty()).isTrue();
 
     assertThat(paths.path("/api/v1/orders").path("post").path("parameters").toString())
         .contains("Idempotency-Key");

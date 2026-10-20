@@ -5,9 +5,9 @@ import io.github.josepauloferreira.orderflow.ordering.api.dto.OrderResponse;
 import io.github.josepauloferreira.orderflow.ordering.application.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.UUID;
@@ -30,7 +30,11 @@ public class OrderController {
 
   private final OrderService orderService;
 
-  @Operation(summary = "Confirm an order", description = "CUSTOMER only. Idempotency-Key is scoped by authenticated subject and canonical order content.", security = @SecurityRequirement(name = "bearerAuth"))
+  @Operation(
+      summary = "Confirm an order",
+      description =
+          "CUSTOMER only. Idempotency-Key is scoped by authenticated subject and canonical order content.",
+      security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponse(responseCode = "201", description = "New order confirmed")
   @ApiResponse(responseCode = "200", description = "Identical request replay; same order ID")
   @ApiResponse(responseCode = "409", description = "Insufficient stock or idempotency conflict")
@@ -47,17 +51,25 @@ public class OrderController {
     return ResponseEntity.ok().location(uri).body(result.order());
   }
 
-  @Operation(summary = "Get a historical order", description = "Order owner or ADMIN only. Prices are snapshotted at confirmation.", security = @SecurityRequirement(name = "bearerAuth"))
+  @Operation(
+      summary = "Get a historical order",
+      description = "Order owner or ADMIN only. Prices are snapshotted at confirmation.",
+      security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponse(responseCode = "403", description = "Not the owner or an administrator")
   @GetMapping("/{id}")
-  public OrderResponse findById(@PathVariable UUID id, @Parameter(hidden = true) Authentication authentication) {
+  public OrderResponse findById(
+      @PathVariable UUID id, @Parameter(hidden = true) Authentication authentication) {
     return orderService.findById(id, authentication.getName(), hasAdminRole(authentication));
   }
 
-  @Operation(summary = "Cancel a confirmed order", description = "Order owner or ADMIN only. Idempotently restores stock once.", security = @SecurityRequirement(name = "bearerAuth"))
+  @Operation(
+      summary = "Cancel a confirmed order",
+      description = "Order owner or ADMIN only. Idempotently restores stock once.",
+      security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponse(responseCode = "204", description = "Order cancelled or previously cancelled")
   @PostMapping("/{id}/cancel")
-  public ResponseEntity<Void> cancel(@PathVariable UUID id, @Parameter(hidden = true) Authentication authentication) {
+  public ResponseEntity<Void> cancel(
+      @PathVariable UUID id, @Parameter(hidden = true) Authentication authentication) {
     orderService.cancel(id, authentication.getName(), hasAdminRole(authentication));
     return ResponseEntity.noContent().build();
   }
