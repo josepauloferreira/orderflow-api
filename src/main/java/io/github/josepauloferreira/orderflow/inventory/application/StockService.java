@@ -3,6 +3,7 @@ package io.github.josepauloferreira.orderflow.inventory.application;
 import io.github.josepauloferreira.orderflow.catalog.domain.Product;
 import io.github.josepauloferreira.orderflow.catalog.domain.ProductNotFoundException;
 import io.github.josepauloferreira.orderflow.catalog.infrastructure.ProductRepository;
+import io.github.josepauloferreira.orderflow.common.observability.DomainMetrics;
 import io.github.josepauloferreira.orderflow.inventory.api.dto.StockAdjustmentRequest;
 import io.github.josepauloferreira.orderflow.inventory.api.dto.StockResponse;
 import io.github.josepauloferreira.orderflow.inventory.domain.InsufficientStockException;
@@ -26,6 +27,7 @@ public class StockService {
   private final ProductRepository productRepository;
   private final StockRepository stockRepository;
   private final StockMovementRepository movementRepository;
+  private final DomainMetrics metrics;
 
   public StockResponse findByProductId(UUID productId) {
     if (!productRepository.existsById(productId)) {
@@ -56,6 +58,7 @@ public class StockService {
             MovementKind.MANUAL_ADJUSTMENT,
             request.delta(),
             request.reason().strip()));
+    metrics.stockAdjusted();
     return new StockResponse(productId, stock.getAvailableQuantity());
   }
 
