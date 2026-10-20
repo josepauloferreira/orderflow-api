@@ -71,7 +71,8 @@ public class ProductController {
 
   @Operation(
       summary = "Replace editable product details",
-      description = "ADMIN only. Requires a strong If-Match ETag from GET; rejects stale writes with 412. SKU cannot be changed.",
+      description =
+          "ADMIN only. Requires a strong If-Match ETag from GET; rejects stale writes with 412. SKU cannot be changed.",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponse(responseCode = "404", description = "Product not found")
   @ApiResponse(responseCode = "428", description = "Missing If-Match precondition")
@@ -88,15 +89,15 @@ public class ProductController {
 
   @Operation(
       summary = "Deactivate a product",
-      description = "ADMIN only. Requires a strong If-Match ETag; repeated deactivation with the current version has no second effect.",
+      description =
+          "ADMIN only. Requires a strong If-Match ETag; repeated deactivation with the current version has no second effect.",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponse(responseCode = "204", description = "Product is inactive")
   @ApiResponse(responseCode = "428", description = "Missing If-Match precondition")
   @ApiResponse(responseCode = "412", description = "Stale product version")
   @PostMapping("/{id}/deactivate")
   public ResponseEntity<Void> deactivate(
-      @PathVariable UUID id,
-      @RequestHeader(value = "If-Match", required = false) String ifMatch) {
+      @PathVariable UUID id, @RequestHeader(value = "If-Match", required = false) String ifMatch) {
     long version = service.deactivate(id, ProductEtag.require(ifMatch));
     return ResponseEntity.noContent().eTag(ProductEtag.of(version)).build();
   }

@@ -31,8 +31,8 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 /**
  * One machine-readable HTTP error contract for MVC/domain errors.
  *
- * Do not catch arbitrary RuntimeException or expose server exception messages
- * to callers; unexpected failures keep Spring's default 500 behavior.
+ * <p>Do not catch arbitrary RuntimeException or expose server exception messages to callers;
+ * unexpected failures keep Spring's default 500 behavior.
  */
 @RestControllerAdvice
 public class GlobalApiExceptionHandler {
@@ -111,8 +111,15 @@ public class GlobalApiExceptionHandler {
     detail.setProperty(
         "violations",
         error.getBindingResult().getFieldErrors().stream()
-            .map(field -> Map.of("field", field.getField(), "message",
-                field.getDefaultMessage() == null ? "Invalid value" : field.getDefaultMessage()))
+            .map(
+                field ->
+                    Map.of(
+                        "field",
+                        field.getField(),
+                        "message",
+                        field.getDefaultMessage() == null
+                            ? "Invalid value"
+                            : field.getDefaultMessage()))
             .sorted(Comparator.comparing(item -> item.get("field")))
             .toList());
     return detail;
@@ -125,22 +132,30 @@ public class GlobalApiExceptionHandler {
 
   @ExceptionHandler(MethodArgumentTypeMismatchException.class)
   public ProblemDetail invalidParameter(MethodArgumentTypeMismatchException error) {
-    return problem(HttpStatus.BAD_REQUEST, "INVALID_PARAMETER", "Path or query parameter has an invalid type");
+    return problem(
+        HttpStatus.BAD_REQUEST, "INVALID_PARAMETER", "Path or query parameter has an invalid type");
   }
 
   @ExceptionHandler(MissingRequestHeaderException.class)
   public ProblemDetail missingHeader(MissingRequestHeaderException error) {
-    return problem(HttpStatus.BAD_REQUEST, "MISSING_HEADER", "A required request header is missing");
+    return problem(
+        HttpStatus.BAD_REQUEST, "MISSING_HEADER", "A required request header is missing");
   }
 
   @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
   public ProblemDetail unsupportedMediaType(HttpMediaTypeNotSupportedException error) {
-    return problem(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "UNSUPPORTED_MEDIA_TYPE", "Unsupported request Content-Type");
+    return problem(
+        HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+        "UNSUPPORTED_MEDIA_TYPE",
+        "Unsupported request Content-Type");
   }
 
   @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
   public ProblemDetail unsupportedMethod(HttpRequestMethodNotSupportedException error) {
-    return problem(HttpStatus.METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED", "Unsupported HTTP method for this endpoint");
+    return problem(
+        HttpStatus.METHOD_NOT_ALLOWED,
+        "METHOD_NOT_ALLOWED",
+        "Unsupported HTTP method for this endpoint");
   }
 
   @ExceptionHandler(NoResourceFoundException.class)

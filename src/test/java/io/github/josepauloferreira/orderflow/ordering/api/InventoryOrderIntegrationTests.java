@@ -198,8 +198,7 @@ class InventoryOrderIntegrationTests {
   void inactiveProductCannotBeOrdered() throws Exception {
     UUID product = createProduct("STOCK-8", "10.00");
     adjust(product, 1, "Initial delivery");
-    mvc.perform(post("/api/v1/products/" + product + "/deactivate")
-                .header("If-Match", "\"0\""))
+    mvc.perform(post("/api/v1/products/" + product + "/deactivate").header("If-Match", "\"0\""))
         .andExpect(status().isNoContent());
 
     mvc.perform(
