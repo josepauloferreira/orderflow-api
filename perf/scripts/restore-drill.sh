@@ -17,13 +17,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-db() {
-  docker compose --profile app --profile auth exec -T postgres sh -c \
-    'psql -X -A -t -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$1" -c "$2"' \
-    -- "$1" "$2"
-}
-# Sh positional arguments above are not expanded inside the single-quoted
-# shell expression. Use a fixed, safe database name per invocation instead.
 query() {
   local target="$1" sql="$2"
   docker compose --profile app --profile auth exec -T postgres sh -c \
@@ -39,7 +32,7 @@ fingerprint_sql="SELECT md5(concat_ws('|',
   (SELECT count(*) FROM order_idempotency),
   (SELECT count(*) FROM stock_movements)))"
 
-source_db="${DB_NAME:-orderflow}"
+source_db="$(docker compose --profile app --profile auth exec -T postgres sh -c 'printf "%s" "$POSTGRES_DB"')"
 [[ "$source_db" =~ ^[a-zA-Z_][a-zA-Z_0-9]*$ ]] || { echo "Unsafe database name" >&2; exit 2; }
 [[ "$source_db" != "$restore_db" ]] || { echo "Refusing to overwrite source" >&2; exit 2; }
 

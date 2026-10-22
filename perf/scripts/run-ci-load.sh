@@ -6,14 +6,14 @@ set -euo pipefail
 mkdir -p perf-results
 
 echo "Running 12-second, 3-iterations/second public catalog probe"
-docker run --rm --network host \
+docker run --rm --network host --user "$(id -u):$(id -g)" \
   --volume "$PWD/perf/k6:/scripts:ro" \
   --volume "$PWD/perf-results:/results" \
   --env API_BASE_URL=http://127.0.0.1:8080 \
   "$K6_IMAGE" run --summary-export /results/catalog.json /scripts/catalog.js
 
 echo "Running 24 contending checkouts over one real stock unit"
-docker run --rm --network host \
+docker run --rm --network host --user "$(id -u):$(id -g)" \
   --volume "$PWD/perf/k6:/scripts:ro" \
   --volume "$PWD/perf-results:/results" \
   --env API_BASE_URL=http://127.0.0.1:8080 \
@@ -31,18 +31,23 @@ docker compose --profile app --profile auth exec -T postgres sh -c \
   'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
   < perf/sql/lock-snapshot.sql > perf-results/locks.txt
 
-# Ensure the disposable single-unit fixture resulted in exactly one order.
-docker compose --profile app --profile auth exec -T postgres sh -c \
-  'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "
-     SELECT CASE WHEN
-       (SELECT count(*) FROM order_items oi JOIN products p ON p.id=oi.product_id
-        WHERE p.sku LIKE '\''PERF-%'\'') = 1
-       AND (SELECT count(*) FROM stock_movements sm JOIN products p ON p.id=sm.product_id
-        WHERE p.sku LIKE '\''PERF-%'\'' AND sm.kind='\''ORDER_CONFIRMED'\'') = 1
-       AND (SELECT sum(available_quantity) FROM inventory i JOIN products p ON p.id=i.product_id
-        WHERE p.sku LIKE '\''PERF-%'\'') = 0
-       THEN '\''PASS'\'' ELSE '\''FAIL'\'' END;"' \
-  | tee perf-results/inventory-integrity.txt
-grep -qx PASS perf-results/inventory-integrity.txt
+# Assert DB invariants independently of the k6 metrics.
+database_result="$(docker compose --profile app --profile auth exec -T postgres sh -c \
+  'psql -X -A -t -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' <<'SQL'
+SELECT CASE WHEN
+  (SELECT count(*) FROM order_items oi JOIN products p ON p.id = oi.product_id
+   WHERE p.sku LIKE 'PERF-%') = 1
+  AND (SELECT count(*) FROM stock_movements sm JOIN products p ON p.id = sm.product_id
+   WHERE p.sku LIKE 'PERF-%' AND sm.kind = 'ORDER_CONFIRMED') = 1
+  AND (SELECT sum(available_quantity) FROM inventory i JOIN products p ON p.id = i.product_id
+   WHERE p.sku LIKE 'PERF-%') = 0
+THEN 'PASS' ELSE 'FAIL' END;
+SQL
+)"
+printf '%s\n' "$database_result" | tee perf-results/inventory-integrity.txt
+[[ "$database_result" == PASS ]] || { echo "Oversell invariant failed" >&2; exit 1; }
+
+# Repeatable SQL contention probe, not just a snapshot taken too late.
+bash perf/scripts/verify-lock-wait.sh
 
 echo "PASS: bounded k6 load, one confirmed order, no oversell and SQL evidence captured"
