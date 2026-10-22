@@ -5,6 +5,11 @@ set -euo pipefail
 : "${K6_IMAGE:=grafana/k6:1.8.1}"
 mkdir -p perf-results
 
+echo "Seeding 5,000 clearly synthetic catalog rows in the disposable CI database"
+docker compose --profile app --profile auth exec -T postgres sh -c \
+  'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
+  < perf/sql/seed-catalog.sql > perf-results/catalog-seed.txt
+
 echo "Running 12-second, 3-iterations/second public catalog probe"
 docker run --rm --network host --user "$(id -u):$(id -g)" \
   --volume "$PWD/perf/k6:/scripts:ro" \
