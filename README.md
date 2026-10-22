@@ -2,7 +2,7 @@
 
 A production-inspired REST API for order management and inventory control. This repository is intentionally developed in **small, verifiable increments** to demonstrate maintainable Java backend engineering.
 
-> **Current status:** The original six milestones are integrated. Business hardening (optimistic catalog editing, consistent HTTP errors and operational migration/idempotency policies) is under review. The Compose stack is a **local/CI demo only**, not production.
+> **Current status:** The original six milestones and business hardening are integrated. Stage 8 adds bounded load, lock diagnostics and an isolated restore drill. The Compose stack is **local/CI only**, not a production configuration.
 
 ## Stack
 
@@ -102,6 +102,10 @@ docker compose --profile auth up -d
 ```
 
 See [local Keycloak instructions](docs/security-idempotency.md) for obtaining a sample token and the full authorization matrix.
+
+## Performance and reliability experiments
+
+Stage 8 provides reproducible k6 catalog and last-unit contention tests, PostgreSQL EXPLAIN/lock evidence and an isolated logical backup/restore exercise. These are **bounded CI experiments**, not production benchmarks or backup guarantees. See [the performance and reliability runbook](docs/performance-reliability.md).
 
 ## Checks
 
