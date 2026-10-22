@@ -11,6 +11,7 @@
 - **Idempotency:** unique database key per customer, canonical payload digest and atomic transaction.
 - **Operations:** non-root Docker runtime, JSON logs, safe correlation IDs, readiness/liveness, committed-operation metrics, real Keycloak smoke test.
 - **Architecture/API governance:** ArchUnit rules constrain package dependencies; OpenAPI is generated and checked against the actual MVC mappings.
+- **Conditional updates (stage 7):** Flyway V7 and Hibernate @Version enforce strong ETag/If-Match requests for catalog mutations; malformed/stale requests and parallel edits are tested.
 
 ## Unresolved work — not production-ready
 
@@ -19,10 +20,10 @@
 | High | Flyway V5 aborts on existing orders without an owner | Plan and test a real-data ownership backfill before an upgrade |
 | High | The local Keycloak demo uses known credentials and password grants | Use managed HTTPS OIDC and Authorization Code + PKCE in actual clients |
 | High | Idempotency-key records have no retention lifecycle | Define a retry window and audit-safe cleanup that preserves semantics |
-| High | Concurrent admin product edits do not use a defined ETag/If-Match policy | Add optimistic version checks or explicit last-write-wins semantics |
+| Resolved in stage 7 | Concurrent admin product edits previously had lost-update risk | Flyway V7, Hibernate @Version, ETag/If-Match and concurrency regression tests |
 | Medium | Rate limiting, request quotas and load-test evidence do not exist | Add gateway limits and run realistic concurrency/load scenarios |
 | Medium | Monitoring lacks SLO targets, alert rules and cross-service tracing | Define SLOs and operational dashboards based on measurable requirements |
-| Medium | Framework-generated HTTP errors may differ from domain Problem Details | Standardize error formatting and extend OpenAPI error schemas |
+| Improved in stage 7 | Common MVC failures previously had inconsistent shapes | Consolidated Problem Details advice; broaden OpenAPI error schemas and test remaining edge cases later |
 | Medium | Release workflow does not include image-signing, dependency policies or SBOM attestation | Add software supply-chain controls before production releases |
 | Medium | Backup/restore exercises and disaster-recovery targets are not demonstrated | Practice database recovery and define RPO/RTO |
 | Low | Some application services accept transport-layer request records | Split into application commands only when another adapter requires it |

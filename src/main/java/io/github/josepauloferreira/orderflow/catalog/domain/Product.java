@@ -3,6 +3,7 @@ package io.github.josepauloferreira.orderflow.catalog.domain;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -23,6 +24,8 @@ public class Product {
   private static final BigDecimal MAX_PRICE = new BigDecimal("9999999999.99");
 
   @Id private UUID id;
+
+  @Version private long version;
 
   private String sku;
   private String name;

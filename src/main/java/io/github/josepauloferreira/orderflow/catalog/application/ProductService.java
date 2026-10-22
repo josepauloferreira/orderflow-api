@@ -58,16 +58,26 @@ public class ProductService {
   }
 
   @Transactional
-  public ProductResponse update(UUID id, UpdateProductRequest request) {
+  public ProductResponse update(UUID id, UpdateProductRequest request, long expectedVersion) {
     Product product = getProduct(id);
+    requireVersion(product, expectedVersion);
     product.updateDetails(request.name(), request.description(), request.price());
     return mapper.toResponse(repository.saveAndFlush(product));
   }
 
   @Transactional
-  public void deactivate(UUID id) {
+  public long deactivate(UUID id, long expectedVersion) {
     Product product = getProduct(id);
+    requireVersion(product, expectedVersion);
     product.deactivate();
+    repository.flush();
+    return product.getVersion();
+  }
+
+  private static void requireVersion(Product product, long expectedVersion) {
+    if (product.getVersion() != expectedVersion) {
+      throw new ProductVersionMismatchException();
+    }
   }
 
   private Product getProduct(UUID id) {

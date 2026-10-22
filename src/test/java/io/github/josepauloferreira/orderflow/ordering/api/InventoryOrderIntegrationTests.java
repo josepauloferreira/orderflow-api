@@ -125,6 +125,7 @@ class InventoryOrderIntegrationTests {
     // Historical prices are independent from later catalog edits.
     mvc.perform(
             put("/api/v1/products/" + first)
+                .header("If-Match", "\"0\"")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -197,7 +198,7 @@ class InventoryOrderIntegrationTests {
   void inactiveProductCannotBeOrdered() throws Exception {
     UUID product = createProduct("STOCK-8", "10.00");
     adjust(product, 1, "Initial delivery");
-    mvc.perform(post("/api/v1/products/" + product + "/deactivate"))
+    mvc.perform(post("/api/v1/products/" + product + "/deactivate").header("If-Match", "\"0\""))
         .andExpect(status().isNoContent());
 
     mvc.perform(

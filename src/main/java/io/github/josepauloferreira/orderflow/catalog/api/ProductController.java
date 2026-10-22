@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -42,7 +43,9 @@ public class ProductController {
   @PostMapping
   public ResponseEntity<ProductResponse> create(@Valid @RequestBody CreateProductRequest request) {
     ProductResponse response = service.create(request);
-    return ResponseEntity.created(URI.create("/api/v1/products/" + response.id())).body(response);
+    return ResponseEntity.created(URI.create("/api/v1/products/" + response.id()))
+        .eTag(ProductEtag.of(response.version()))
+        .body(response);
   }
 
   @Operation(
@@ -50,8 +53,9 @@ public class ProductController {
       description = "Public read; inactive products remain addressable.")
   @ApiResponse(responseCode = "404", description = "Product not found")
   @GetMapping("/{id}")
-  public ProductResponse findById(@PathVariable UUID id) {
-    return service.findById(id);
+  public ResponseEntity<ProductResponse> findById(@PathVariable UUID id) {
+    ProductResponse response = service.findById(id);
+    return ResponseEntity.ok().eTag(ProductEtag.of(response.version())).body(response);
   }
 
   @Operation(
@@ -67,23 +71,34 @@ public class ProductController {
 
   @Operation(
       summary = "Replace editable product details",
-      description = "ADMIN only. SKU cannot be changed.",
+      description =
+          "ADMIN only. Requires a strong If-Match ETag from GET; rejects stale writes with 412. SKU cannot be changed.",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponse(responseCode = "404", description = "Product not found")
+  @ApiResponse(responseCode = "428", description = "Missing If-Match precondition")
+  @ApiResponse(responseCode = "412", description = "Stale product version")
   @PutMapping("/{id}")
-  public ProductResponse update(
-      @PathVariable UUID id, @Valid @RequestBody UpdateProductRequest request) {
-    return service.update(id, request);
+  public ResponseEntity<ProductResponse> update(
+      @PathVariable UUID id,
+      @Valid @RequestBody UpdateProductRequest request,
+      @RequestHeader(value = "If-Match", required = false) String ifMatch) {
+    long expected = ProductEtag.require(ifMatch);
+    ProductResponse updated = service.update(id, request, expected);
+    return ResponseEntity.ok().eTag(ProductEtag.of(updated.version())).body(updated);
   }
 
   @Operation(
       summary = "Deactivate a product",
-      description = "ADMIN only. Idempotent; does not delete historical orders.",
+      description =
+          "ADMIN only. Requires a strong If-Match ETag; repeated deactivation with the current version has no second effect.",
       security = @SecurityRequirement(name = "bearerAuth"))
   @ApiResponse(responseCode = "204", description = "Product is inactive")
+  @ApiResponse(responseCode = "428", description = "Missing If-Match precondition")
+  @ApiResponse(responseCode = "412", description = "Stale product version")
   @PostMapping("/{id}/deactivate")
-  public ResponseEntity<Void> deactivate(@PathVariable UUID id) {
-    service.deactivate(id);
-    return ResponseEntity.noContent().build();
+  public ResponseEntity<Void> deactivate(
+      @PathVariable UUID id, @RequestHeader(value = "If-Match", required = false) String ifMatch) {
+    long version = service.deactivate(id, ProductEtag.require(ifMatch));
+    return ResponseEntity.noContent().eTag(ProductEtag.of(version)).build();
   }
 }
