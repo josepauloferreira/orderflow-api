@@ -8,12 +8,15 @@ set -euo pipefail
 [[ "$RESTORE_DRILL_LOCAL_ONLY" == YES ]] || { echo "Local confirmation required" >&2; exit 2; }
 
 backup="$(mktemp)"
-restore_db="orderflow_stage8_drill"
+restore_db="orderflow_drill_${GITHUB_RUN_ID:-local}_$RANDOM"
+created=0
 mkdir -p perf-results
 cleanup() {
   rm -f "$backup"
-  docker compose --profile app --profile auth exec -T postgres sh -c \
-    'dropdb -U "$POSTGRES_USER" --if-exists --force orderflow_stage8_drill' >/dev/null 2>&1 || true
+  if [[ "$created" == 1 ]]; then
+    docker compose --profile app --profile auth exec -T postgres sh -c \
+      'dropdb -U "$POSTGRES_USER" "$1"' sh "$restore_db" >/dev/null 2>&1 || true
+  fi
 }
 trap cleanup EXIT
 
@@ -43,13 +46,12 @@ docker compose --profile app --profile auth exec -T postgres sh -c \
   'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc --no-owner --no-acl' > "$backup"
 [[ -s "$backup" ]] || { echo "Empty backup" >&2; exit 1; }
 
-# Only the dedicated disposable target DB may be dropped.
+# Created exclusively for this run; never drop or overwrite a pre-existing DB.
 docker compose --profile app --profile auth exec -T postgres sh -c \
-  'dropdb -U "$POSTGRES_USER" --if-exists --force orderflow_stage8_drill'
+  'createdb -U "$POSTGRES_USER" "$1"' sh "$restore_db"
+created=1
 docker compose --profile app --profile auth exec -T postgres sh -c \
-  'createdb -U "$POSTGRES_USER" orderflow_stage8_drill'
-docker compose --profile app --profile auth exec -T postgres sh -c \
-  'pg_restore -U "$POSTGRES_USER" -d orderflow_stage8_drill --exit-on-error --no-owner --no-acl' < "$backup"
+  'pg_restore -U "$POSTGRES_USER" -d "$1" --exit-on-error --no-owner --no-acl' sh "$restore_db" < "$backup"
 
 restored_fingerprint="$(query "$restore_db" "$fingerprint_sql")"
 [[ "$source_fingerprint" == "$restored_fingerprint" ]] || {
