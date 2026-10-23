@@ -123,6 +123,10 @@ See [local Keycloak instructions](docs/security-idempotency.md) for obtaining a 
 
 Stage 8 provides reproducible k6 catalog and last-unit contention tests, PostgreSQL EXPLAIN/lock evidence and an isolated logical backup/restore exercise. These are **bounded CI experiments**, not production benchmarks or backup guarantees. See [the performance and reliability runbook](docs/performance-reliability.md).
 
+## First verified release candidate
+
+The GitHub Actions [`0.1.0-rc.1` candidate build](https://github.com/josepauloferreira/orderflow-api/actions/runs/39939700217) **passed**, producing a versioned Spring Boot JAR, SHA-256 checksum, SPDX SBOM and verified signed provenance. It did **not** deploy or publish the candidate. See [release evidence and reproducible verification](docs/release-process.md).
+
 ## Release candidate and security checks
 
 PRs run container vulnerability inspection and SBOM generation in addition to Java and Docker integration tests. GitHub's dependency-diff review is configured but currently **skipped until Dependency Graph is enabled**; see the release runbook for that prerequisite. A manual release-candidate workflow can build a versioned JAR, an image SBOM and a signed provenance attestation **without publishing a release or pushing to a registry**. The optional dependency-diff policy would block newly introduced high-severity vulnerable dependencies once enabled, while the active image-scan gate blocks fixable critical findings; high image findings are recorded for review.
