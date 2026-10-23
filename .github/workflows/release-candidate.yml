@@ -19,6 +19,7 @@ jobs:
     permissions:
       contents: read
       attestations: write
+      artifact-metadata: write
       id-token: write
     env:
       CANDIDATE_VERSION: ${{ inputs.version }}
@@ -41,7 +42,7 @@ jobs:
           java-version: '25'
           cache: maven
       - name: Set ephemeral candidate version (does not push source changes)
-        run: ./mvnw -B -ntp versions:set -DnewVersion="$CANDIDATE_VERSION" -DgenerateBackupPoms=false
+        run: ./mvnw -B -ntp org.codehaus.mojo:versions-maven-plugin:2.22.0:set -DnewVersion="$CANDIDATE_VERSION" -DgenerateBackupPoms=false
       - name: Verify candidate against PostgreSQL Testcontainers
         run: ./mvnw -B -ntp verify
       - name: Package candidate JAR
@@ -51,7 +52,7 @@ jobs:
           docker build -t "orderflow-api:$CANDIDATE_VERSION" .
           mkdir -p release-evidence
           cp "target/orderflow-api-$CANDIDATE_VERSION.jar" "release-evidence/orderflow-api-$CANDIDATE_VERSION.jar"
-          (cd release-evidence && sha256sum *.jar > SHA256SUMS)
+          (cd release-evidence && sha256sum *.jar > SHA256SUMS && sha256sum --check SHA256SUMS)
           printf 'Git commit: %s\nCandidate version: %s\n' "$GITHUB_SHA" "$CANDIDATE_VERSION" > release-evidence/build-info.txt
       - name: Generate candidate image SBOM
         uses: anchore/sbom-action@v0.24.0
