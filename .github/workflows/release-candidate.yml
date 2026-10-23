@@ -58,7 +58,7 @@ jobs:
           docker build -t "orderflow-api:$CANDIDATE_VERSION" .
           mkdir -p release-evidence
           cp "target/orderflow-api-$CANDIDATE_VERSION.jar" "release-evidence/orderflow-api-$CANDIDATE_VERSION.jar"
-          (cd release-evidence && sha256sum *.jar > SHA256SUMS && sha256sum --check SHA256SUMS)
+          (cd release-evidence && sha256sum ./*.jar > SHA256SUMS && sha256sum --check SHA256SUMS)
           printf 'Git commit: %s\nCandidate version: %s\n' "$GITHUB_SHA" "$CANDIDATE_VERSION" > release-evidence/build-info.txt
       - name: Generate candidate image SBOM
         uses: anchore/sbom-action@v0.24.0
