@@ -1,0 +1,23 @@
+name: Bootstrap first release candidate (one-time)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/bootstrap-first-candidate.yml
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    name: Build 0.1.0-rc.1 from reviewed main
+    if: startsWith(github.event.head_commit.message, 'chore(release): bootstrap 0.1.0-rc.1 candidate')
+    uses: ./.github/workflows/release-candidate.yml
+    with:
+      version: '0.1.0-rc.1'
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write

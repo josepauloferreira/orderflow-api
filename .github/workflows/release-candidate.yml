@@ -1,13 +1,12 @@
 name: Build release candidate
 
 on:
-  # One-time bootstrap: only a reviewed main merge modifying THIS file with
-  # the exact designated commit title may start an automatic candidate.
-  # Remove this push trigger after the candidate is verified.
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/release-candidate.yml
+  workflow_call:
+    inputs:
+      version:
+        description: 'Release candidate version'
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       version:
@@ -20,7 +19,6 @@ permissions:
 
 jobs:
   candidate:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'chore(release): bootstrap 0.1.0-rc.1 candidate')) }}
     name: Versioned JAR and locally scanned OCI image
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -30,7 +28,7 @@ jobs:
       artifact-metadata: write
       id-token: write
     env:
-      CANDIDATE_VERSION: ${{ inputs.version || '0.1.0-rc.1' }}
+      CANDIDATE_VERSION: ${{ inputs.version }}
     steps:
       - uses: actions/checkout@v5
       - name: Validate manual release version and source branch
