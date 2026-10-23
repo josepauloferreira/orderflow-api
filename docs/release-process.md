@@ -58,6 +58,23 @@ gh attestation verify orderflow-api-0.1.0-rc.1.jar \
 
 Do not assert provenance verification without actually executing these commands. A checksum proves byte integrity relative to a particular checksum file, not that the package is safe or trustworthy.
 
+## First verified release candidate
+
+The one-time GitHub Actions bootstrap created and independently verified the development candidate `0.1.0-rc.1`:
+
+- [Candidate workflow run 39939700217](https://github.com/josepauloferreira/orderflow-api/actions/runs/39939700217), concluded **success**.
+- Source commit: `ce3111936abc139dd775480c13ddce9a4367a2e7`.
+- Executable JAR: `orderflow-api-0.1.0-rc.1.jar`.
+- SHA-256: `f6c4df533800eb38983b5b465ba00a3daa26f88428c8d29a174393a2f379e41b`.
+- SPDX image SBOM: 166 packages; Trivy report: **zero fixable vulnerabilities at HIGH/CRITICAL** under the configured scanner policy.
+- `actions/attest@v4` generated GitHub-signed JAR build provenance, and `gh attestation verify` succeeded inside the same workflow with repository, source-ref and signer-workflow checks. The result was included as `provenance-verification.json`.
+- Maven verification, application image packaging, scanner and checksum validation passed. This is not a deployed release, OCI image signature, or production security certification.
+- The first candidate artifact expires automatically after 14 days under the workflow's retention rule; use the linked run while it remains available.
+
+The temporary bootstrap push workflow is removed in the follow-up maintenance PR. Future candidates continue to use the original **manual** `Build release candidate` workflow on `main`; no automatic candidate build is left enabled.
+
+**Outstanding administration:** the official GitHub dependency-diff job remains skipped until Dependency Graph is enabled and repository Actions variable `ORDERFLOW_DEPENDENCY_GRAPH_ENABLED=true` is configured. Trivy's image scan is active but does not substitute for that GitHub diff-specific control.
+
 ## Before real deployment
 
 Deployment needs a separate design for approved HTTPS OIDC, managed secrets, locked-down network exposure, controlled DB migrations and rollback, SLOs, rate limits, idempotency retention, backups and restoration on another host, an image registry with pinned image digests and image signatures, a staging smoke test and an explicit human approval gate.
