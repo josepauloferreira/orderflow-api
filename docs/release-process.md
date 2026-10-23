@@ -8,6 +8,10 @@ The initial security scan found three CRITICAL records against `tomcat-embed-cor
 
 Upstream advisory: https://github.com/advisories/GHSA-gcx9-497g-6cp6
 
+## Jackson security remediation
+
+The follow-up image scan after the Tomcat patch recorded **10 HIGH findings**, five in `com.fasterxml.jackson.core` 2.21.5 and five in `tools.jackson.core` 3.1.5 (`jackson-core` / `jackson-databind`). The Spring Boot parent exposes separate `jackson-2-bom.version` and `jackson-bom.version` properties. We set them to patched **2.21.7** and **3.1.7**, respectively, keeping each Jackson line consistent instead of overriding individual modules. The security scan and test suite must confirm the actual assembled versions. Remove these overrides after updating Spring Boot to a vetted baseline that already incorporates the fixes.
+
 ## Pull request gates
 
 Every PR runs `ci.yml` (Java 25 Maven/Testcontainers, Docker + real Keycloak, bounded k6/lock/restore exercise) and `supply-chain.yml`. The **container image scanning gate is active**; the GitHub dependency-diff job is skipped until Dependency Graph is enabled (Settings → Security) **and** the repository Actions variable `ORDERFLOW_DEPENDENCY_GRAPH_ENABLED` is set to `true`. This is a visible prerequisite, not a silently bypassed successful dependency review.

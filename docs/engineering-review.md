@@ -44,6 +44,10 @@ These are identified risks, **not features that were implemented or tested**. A 
 
 The first image scan failed due to the embedded Tomcat 11.0.24 dependency and exposed fixable CVEs. Stage 9 overrides the managed Tomcat property to the patched 11.0.25 release; **the follow-up scan must pass before considering this remediation verified**. Keep this exception small and review it when bumping the Spring Boot parent.
 
+## Jackson scan findings
+
+The first corrected Tomcat image still contained ten HIGH Jackson 2/3 findings. Stage 9 now overrides both managed Jackson BOM version properties to patched 2.21.7 and 3.1.7. **These overrides must be verified against the built-image SBOM and the subsequent scan**, and reviewed when upgrading the parent Spring Boot version.
+
 ## Stage-9 release evidence
 
 Candidate workflows intentionally separate **building/attesting** from **publishing/deploying**. The manual workflow must be exercised on `main` before claiming that attestation succeeds. Critical image vulnerability gates block known fixable critical findings; this cannot prove the image has no vulnerabilities, nor does it replace secure registry distribution, image signatures and staging release rehearsals.
