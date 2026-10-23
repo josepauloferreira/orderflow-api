@@ -2,6 +2,12 @@
 
 **No automatic deploy, GitHub Release creation, registry push or change to production resources.**
 
+## Confirmed vulnerability remediation (October 2026)
+
+The initial security scan found three CRITICAL records against `tomcat-embed-core:11.0.24`: `CVE-2026-65182`, `CVE-2026-65905` and `CVE-2026-68525`. Spring Boot 4.1.1 managed Tomcat 11.0.24. The project now overrides the parent-managed `tomcat.version` to **11.0.25**, a patched Tomcat 11 release, and verifies the assembled image through Trivy. This overrides a dependency BOM property rather than declaring mixed Tomcat module versions. Retest the exception after each Boot upgrade and remove the override once the parent manages a verified fixed version.
+
+Upstream advisory: https://github.com/advisories/GHSA-gcx9-497g-6cp6
+
 ## Pull request gates
 
 Every PR runs `ci.yml` (Java 25 Maven/Testcontainers, Docker + real Keycloak, bounded k6/lock/restore exercise) and `supply-chain.yml`. The **container image scanning gate is active**; the GitHub dependency-diff job is skipped until Dependency Graph is enabled (Settings → Security) **and** the repository Actions variable `ORDERFLOW_DEPENDENCY_GRAPH_ENABLED` is set to `true`. This is a visible prerequisite, not a silently bypassed successful dependency review.

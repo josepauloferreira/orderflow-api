@@ -40,6 +40,10 @@ These are identified risks, **not features that were implemented or tested**. A 
 6. Do not add Redis/Kafka/Kubernetes/microservices without an actual measured requirement.
 7. Keep the demo Compose manifest separate in intent from a production deployment.
 
+## Tomcat remediation
+
+The first image scan failed due to the embedded Tomcat 11.0.24 dependency and exposed fixable CVEs. Stage 9 overrides the managed Tomcat property to the patched 11.0.25 release; **the follow-up scan must pass before considering this remediation verified**. Keep this exception small and review it when bumping the Spring Boot parent.
+
 ## Stage-9 release evidence
 
 Candidate workflows intentionally separate **building/attesting** from **publishing/deploying**. The manual workflow must be exercised on `main` before claiming that attestation succeeds. Critical image vulnerability gates block known fixable critical findings; this cannot prove the image has no vulnerabilities, nor does it replace secure registry distribution, image signatures and staging release rehearsals.

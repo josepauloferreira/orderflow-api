@@ -19,6 +19,9 @@
 
   <properties>
     <java.version>25</java.version>
+    <!-- Security patch: Spring Boot 4.1.1 manages Tomcat 11.0.24, affected
+         by CVE-2026-65182 / 65905 / 68525. Keep all Tomcat modules aligned. -->
+    <tomcat.version>11.0.25</tomcat.version>
     <spotless.version>3.10.4</spotless.version>
     <lombok.version>1.18.48</lombok.version>
     <mapstruct.version>1.6.3</mapstruct.version>
