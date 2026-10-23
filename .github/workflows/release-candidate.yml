@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   candidate:
-    name: Versioned candidate JAR and OCI image
+    name: Versioned JAR and locally scanned OCI image
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:
@@ -51,7 +51,7 @@ jobs:
           docker build -t "orderflow-api:$CANDIDATE_VERSION" .
           mkdir -p release-evidence
           cp "target/orderflow-api-$CANDIDATE_VERSION.jar" "release-evidence/orderflow-api-$CANDIDATE_VERSION.jar"
-          sha256sum release-evidence/*.jar > release-evidence/SHA256SUMS
+          (cd release-evidence && sha256sum *.jar > SHA256SUMS)
           printf 'Git commit: %s\nCandidate version: %s\n' "$GITHUB_SHA" "$CANDIDATE_VERSION" > release-evidence/build-info.txt
       - name: Generate candidate image SBOM
         uses: anchore/sbom-action@v0.24.0
