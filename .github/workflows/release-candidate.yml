@@ -1,6 +1,12 @@
 name: Build release candidate
 
 on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Release candidate version'
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       version:
@@ -52,19 +58,19 @@ jobs:
           docker build -t "orderflow-api:$CANDIDATE_VERSION" .
           mkdir -p release-evidence
           cp "target/orderflow-api-$CANDIDATE_VERSION.jar" "release-evidence/orderflow-api-$CANDIDATE_VERSION.jar"
-          (cd release-evidence && sha256sum *.jar > SHA256SUMS && sha256sum --check SHA256SUMS)
+          (cd release-evidence && sha256sum ./*.jar > SHA256SUMS && sha256sum --check SHA256SUMS)
           printf 'Git commit: %s\nCandidate version: %s\n' "$GITHUB_SHA" "$CANDIDATE_VERSION" > release-evidence/build-info.txt
       - name: Generate candidate image SBOM
         uses: anchore/sbom-action@v0.24.0
         with:
-          image: orderflow-api:${{ inputs.version }}
+          image: orderflow-api:${{ env.CANDIDATE_VERSION }}
           format: spdx-json
           output-file: release-evidence/image.spdx.json
           upload-artifact: false
       - name: Block fixable critical image vulnerabilities
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: orderflow-api:${{ inputs.version }}
+          image-ref: orderflow-api:${{ env.CANDIDATE_VERSION }}
           format: json
           output: release-evidence/image-vulnerabilities.json
           severity: CRITICAL
@@ -74,10 +80,21 @@ jobs:
         uses: actions/attest@v4
         with:
           subject-path: release-evidence/orderflow-api-*.jar
+      - name: Independently verify GitHub-signed provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh attestation verify "release-evidence/orderflow-api-$CANDIDATE_VERSION.jar" \
+            --repo "$GITHUB_REPOSITORY" \
+            --source-ref "$GITHUB_REF" \
+            --signer-workflow "github.com/$GITHUB_REPOSITORY/.github/workflows/release-candidate.yml" \
+            --format json > release-evidence/provenance-verification.json
+          test -s release-evidence/provenance-verification.json
       - name: Upload verified candidate artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: orderflow-${{ inputs.version }}-${{ github.sha }}
+          name: orderflow-${{ env.CANDIDATE_VERSION }}-${{ github.sha }}
           path: release-evidence/
           if-no-files-found: error
           retention-days: 14

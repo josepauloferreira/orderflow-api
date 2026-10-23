@@ -64,3 +64,12 @@ jobs:
       - name: Remove containers and disposable test data
         if: always()
         run: docker compose --profile app --profile auth down -v --remove-orphans
+
+  workflow-lint:
+    name: Lint GitHub Actions YAML
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate all workflow triggers and expressions
+        run: docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.12 -color
