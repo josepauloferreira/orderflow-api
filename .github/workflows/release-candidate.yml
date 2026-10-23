@@ -30,7 +30,7 @@ jobs:
     env:
       CANDIDATE_VERSION: ${{ inputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Validate manual release version and source branch
         shell: bash
         run: |
