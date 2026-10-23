@@ -1,0 +1,62 @@
+name: Supply-chain security
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  dependency-review:
+    name: Dependency policy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Block newly introduced high/critical known vulnerabilities
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+  image-security:
+    name: Container SBOM and vulnerability scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build candidate image without publishing
+        run: docker build --tag orderflow-api:review .
+      - name: Generate image SBOM (SPDX JSON)
+        uses: anchore/sbom-action@v0.24.0
+        with:
+          image: orderflow-api:review
+          format: spdx-json
+          output-file: orderflow-image.spdx.json
+          upload-artifact: false
+      - name: Record HIGH and CRITICAL vulnerabilities for review
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          image-ref: orderflow-api:review
+          format: json
+          output: orderflow-trivy.json
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '0'
+      - name: Block fixable critical vulnerabilities
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          image-ref: orderflow-api:review
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+      - name: Archive non-secret SBOM and findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: supply-chain-pr-evidence
+          path: |
+            orderflow-image.spdx.json
+            orderflow-trivy.json
+          if-no-files-found: warn
+          retention-days: 7
