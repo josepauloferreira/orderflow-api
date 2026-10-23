@@ -44,6 +44,20 @@ jobs:
         run: docker compose --profile app --profile auth up -d --build --wait
       - name: Smoke test real signed JWT and business flow
         run: bash infra/scripts/smoke-container.sh
+      - name: Bounded k6 catalog and single-unit contention probes
+        run: bash perf/scripts/run-ci-load.sh
+      - name: PostgreSQL custom-format backup and isolated restore drill
+        env:
+          RESTORE_DRILL_LOCAL_ONLY: "YES"
+        run: bash perf/scripts/restore-drill.sh
+      - name: Upload anonymized performance and restore evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage8-local-ci-evidence
+          path: perf-results/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Show service logs after failure
         if: failure()
         run: docker compose --profile app --profile auth logs --tail=150

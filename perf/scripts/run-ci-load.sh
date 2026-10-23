@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# CI-only, bounded reference load. Never use these numbers as capacity claims.
+: "${K6_IMAGE:=grafana/k6:1.8.1}"
+mkdir -p perf-results
+
+echo "Seeding 5,000 clearly synthetic catalog rows in the disposable CI database"
+docker compose --profile app --profile auth exec -T postgres sh -c \
+  'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
+  < perf/sql/seed-catalog.sql > perf-results/catalog-seed.txt
+
+echo "Running 12-second, 3-iterations/second public catalog probe"
+docker run --rm --network host --user "$(id -u):$(id -g)" \
+  --volume "$PWD/perf/k6:/scripts:ro" \
+  --volume "$PWD/perf-results:/results" \
+  --env API_BASE_URL=http://127.0.0.1:8080 \
+  "$K6_IMAGE" run --summary-export /results/catalog.json /scripts/catalog.js
+
+echo "Running 24 contending checkouts over one real stock unit"
+docker run --rm --network host --user "$(id -u):$(id -g)" \
+  --volume "$PWD/perf/k6:/scripts:ro" \
+  --volume "$PWD/perf-results:/results" \
+  --env API_BASE_URL=http://127.0.0.1:8080 \
+  --env OIDC_BASE_URL=http://127.0.0.1:8081/realms/orderflow \
+  --env ALLOW_DESTRUCTIVE_PERF=LOCAL_ONLY \
+  "$K6_IMAGE" run --summary-export /results/last-unit.json /scripts/last-unit.js
+
+echo "Capturing PostgreSQL query plans (actual runtime on this tiny CI fixture)"
+docker compose --profile app --profile auth exec -T postgres sh -c \
+  'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
+  < perf/sql/catalog-plans.sql > perf-results/catalog-plans.txt
+
+echo "Capturing lock-wait snapshot after the bounded load"
+docker compose --profile app --profile auth exec -T postgres sh -c \
+  'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
+  < perf/sql/lock-snapshot.sql > perf-results/locks.txt
+
+# Assert DB invariants independently of the k6 metrics.
+database_result="$(docker compose --profile app --profile auth exec -T postgres sh -c \
+  'psql -X -A -t -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' <<'SQL'
+SELECT CASE WHEN
+  (SELECT count(*) FROM order_items oi JOIN products p ON p.id = oi.product_id
+   WHERE p.sku LIKE 'PERF-%') = 1
+  AND (SELECT count(*) FROM stock_movements sm JOIN products p ON p.id = sm.product_id
+   WHERE p.sku LIKE 'PERF-%' AND sm.kind = 'ORDER_CONFIRMED') = 1
+  AND (SELECT sum(available_quantity) FROM inventory i JOIN products p ON p.id = i.product_id
+   WHERE p.sku LIKE 'PERF-%') = 0
+THEN 'PASS' ELSE 'FAIL' END;
+SQL
+)"
+printf '%s\n' "$database_result" | tee perf-results/inventory-integrity.txt
+[[ "$database_result" == PASS ]] || { echo "Oversell invariant failed" >&2; exit 1; }
+
+# Repeatable SQL contention probe, not just a snapshot taken too late.
+bash perf/scripts/verify-lock-wait.sh
+
+echo "PASS: bounded k6 load, one confirmed order, no oversell and SQL evidence captured"

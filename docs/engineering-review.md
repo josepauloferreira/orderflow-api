@@ -21,11 +21,11 @@
 | High | The local Keycloak demo uses known credentials and password grants | Use managed HTTPS OIDC and Authorization Code + PKCE in actual clients |
 | High | Idempotency-key records have no retention lifecycle | Define a retry window and audit-safe cleanup that preserves semantics |
 | Resolved in stage 7 | Concurrent admin product edits previously had lost-update risk | Flyway V7, Hibernate @Version, ETag/If-Match and concurrency regression tests |
-| Medium | Rate limiting, request quotas and load-test evidence do not exist | Add gateway limits and run realistic concurrency/load scenarios |
+| Partially addressed (stage 8) | No sustained representative load baseline, rate limiting or quotas | Added short k6 catalog/last-unit CI scenarios; follow up with large realistic datasets and gateway policies |
 | Medium | Monitoring lacks SLO targets, alert rules and cross-service tracing | Define SLOs and operational dashboards based on measurable requirements |
 | Improved in stage 7 | Common MVC failures previously had inconsistent shapes | Consolidated Problem Details advice; broaden OpenAPI error schemas and test remaining edge cases later |
 | Medium | Release workflow does not include image-signing, dependency policies or SBOM attestation | Add software supply-chain controls before production releases |
-| Medium | Backup/restore exercises and disaster-recovery targets are not demonstrated | Practice database recovery and define RPO/RTO |
+| Partially addressed (stage 8) | No off-host disaster-recovery evidence or RPO/RTO targets | Added isolated same-server pg_dump/pg_restore drill with aggregate reconciliation; rehearse loss of primary on another host |
 | Low | Some application services accept transport-layer request records | Split into application commands only when another adapter requires it |
 
 These are identified risks, **not features that were implemented or tested**. A green CI is not evidence of production performance, legal compliance, complete security or successful database restoration.
