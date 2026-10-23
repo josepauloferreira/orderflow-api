@@ -24,7 +24,7 @@
 | Partially addressed (stage 8) | No sustained representative load baseline, rate limiting or quotas | Added short k6 catalog/last-unit CI scenarios; follow up with large realistic datasets and gateway policies |
 | Medium | Monitoring lacks SLO targets, alert rules and cross-service tracing | Define SLOs and operational dashboards based on measurable requirements |
 | Improved in stage 7 | Common MVC failures previously had inconsistent shapes | Consolidated Problem Details advice; broaden OpenAPI error schemas and test remaining edge cases later |
-| Medium | Release workflow does not include image-signing, dependency policies or SBOM attestation | Add software supply-chain controls before production releases |
+| Partially addressed (stage 9) | Release supply chain lacked a clear policy | Added **opt-in** PR dependency review (currently skipped until Dependency Graph enabled), image SBOM, Trivy critical gate and manual attested JAR candidate; **no deployed image signing, publication or complete release verification yet** |
 | Partially addressed (stage 8) | No off-host disaster-recovery evidence or RPO/RTO targets | Added isolated same-server pg_dump/pg_restore drill with aggregate reconciliation; rehearse loss of primary on another host |
 | Low | Some application services accept transport-layer request records | Split into application commands only when another adapter requires it |
 
@@ -39,6 +39,18 @@ These are identified risks, **not features that were implemented or tested**. A 
 5. Capture important decisions as ADRs and encode enforceable rules as unit/integration/architecture tests.
 6. Do not add Redis/Kafka/Kubernetes/microservices without an actual measured requirement.
 7. Keep the demo Compose manifest separate in intent from a production deployment.
+
+## Tomcat remediation
+
+The first image scan failed due to the embedded Tomcat 11.0.24 dependency and exposed fixable CVEs. Stage 9 overrides the managed Tomcat property to the patched 11.0.25 release; **the follow-up scan must pass before considering this remediation verified**. Keep this exception small and review it when bumping the Spring Boot parent.
+
+## Jackson scan findings
+
+The first corrected Tomcat image still contained ten HIGH Jackson 2/3 findings. Stage 9 now overrides both managed Jackson BOM version properties to patched 2.21.7 and 3.1.7. **These overrides must be verified against the built-image SBOM and the subsequent scan**, and reviewed when upgrading the parent Spring Boot version.
+
+## Stage-9 release evidence
+
+Candidate workflows intentionally separate **building/attesting** from **publishing/deploying**. The manual workflow must be exercised on `main` before claiming that attestation succeeds. Critical image vulnerability gates block known fixable critical findings; this cannot prove the image has no vulnerabilities, nor does it replace secure registry distribution, image signatures and staging release rehearsals.
 
 ## Acceptance checks
 

@@ -2,7 +2,23 @@
 
 A production-inspired REST API for order management and inventory control. This repository is intentionally developed in **small, verifiable increments** to demonstrate maintainable Java backend engineering.
 
-> **Current status:** The original six milestones and business hardening are integrated. Stage 8 adds bounded load, lock diagnostics and an isolated restore drill. The Compose stack is **local/CI only**, not a production configuration.
+> **Current status:** The original six milestones, business hardening and stage-8 performance/reliability experiments are integrated. Stage 9 adds evidence-backed release candidates and supply-chain controls. **The Compose stack is local/CI only, not a production deployment.**
+
+## What this project demonstrates
+
+OrderFlow is a **Java modular monolith**, not an overbuilt microservice demonstration. Its core engineering claims have executable evidence:
+
+| Engineering concern | Implementation and proof |
+| --- | --- |
+| Transactions under contention | PostgreSQL row locks, consistent lock order, concurrent last-unit tests |
+| Historical order integrity | Snapshotted prices, atomic movement ledger, rollback tests |
+| Replay safety | Per-customer transactional idempotency keys and racing-request tests |
+| Concurrent administrative editing | `@Version`, strong `ETag`/`If-Match`, parallel edit tests |
+| Identity and authorization | JWT issuer/audience checks, roles, ownership, real Keycloak smoke |
+| Data & quality contracts | Flyway SQL-first, OpenAPI, ArchUnit, Spotless and 49 Java tests |
+| Measured reliability | Bounded k6 workloads, PostgreSQL lock plans, isolated backup/restore drill |
+
+For a reviewer, start with [the engineering case study](docs/portfolio-case-study.md), [architecture diagrams](docs/architecture.md) and [evidence runbook](docs/release-process.md). The project intentionally reports unresolved production risks.
 
 ## Stack
 
@@ -107,6 +123,12 @@ See [local Keycloak instructions](docs/security-idempotency.md) for obtaining a 
 
 Stage 8 provides reproducible k6 catalog and last-unit contention tests, PostgreSQL EXPLAIN/lock evidence and an isolated logical backup/restore exercise. These are **bounded CI experiments**, not production benchmarks or backup guarantees. See [the performance and reliability runbook](docs/performance-reliability.md).
 
+## Release candidate and security checks
+
+PRs run container vulnerability inspection and SBOM generation in addition to Java and Docker integration tests. GitHub's dependency-diff review is configured but currently **skipped until Dependency Graph is enabled**; see the release runbook for that prerequisite. A manual release-candidate workflow can build a versioned JAR, an image SBOM and a signed provenance attestation **without publishing a release or pushing to a registry**. The optional dependency-diff policy would block newly introduced high-severity vulnerable dependencies once enabled, while the active image-scan gate blocks fixable critical findings; high image findings are recorded for review.
+
+Follow [the candidate release procedure](docs/release-process.md) before using it; it requires a reviewed `main` commit. No release has been issued automatically.
+
 ## Checks
 
 ```bash
@@ -137,7 +159,7 @@ Hibernate verifies the schema (`ddl-auto=validate`); Flyway will own DDL changes
 5. **Operations (PR #9):** non-root application Dockerfile, metrics, structured logs, correlation IDs and container smoke tests.
 6. **Engineering review (PR #10):** generated OpenAPI, architecture constraints, contract tests, risk register and final validation.
 
-See [ADR 0001](docs/adr/0001-modular-monolith.md) for modular architecture, [ADR 0002](docs/adr/0002-flyway-schema-first.md) for schema-first persistence and [ADR 0005](docs/adr/0005-operability-observability.md) for operational decisions. No business endpoints are claimed complete until their behavior and tests exist.
+See [ADR 0008](docs/adr/0008-release-candidates-and-provenance.md) for supply-chain controls and [ADR 0001](docs/adr/0001-modular-monolith.md) for modular architecture, [ADR 0002](docs/adr/0002-flyway-schema-first.md) for schema-first persistence and [ADR 0005](docs/adr/0005-operability-observability.md) for operational decisions. No business endpoints are claimed complete until their behavior and tests exist.
 
 ## Lombok guidelines
 

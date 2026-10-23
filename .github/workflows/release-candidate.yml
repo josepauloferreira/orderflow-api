@@ -1,0 +1,82 @@
+name: Build release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Candidate version (e.g. 0.1.0-rc.1)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    name: Versioned JAR and locally scanned OCI image
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      attestations: write
+      id-token: write
+    env:
+      CANDIDATE_VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate manual release version and source branch
+        shell: bash
+        run: |
+          if [[ ! "$CANDIDATE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]]; then
+            echo "Version must be like 0.1.0-rc.1" >&2
+            exit 1
+          fi
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "Candidates must be built from reviewed main commits" >&2
+            exit 1
+          fi
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Set ephemeral candidate version (does not push source changes)
+        run: ./mvnw -B -ntp versions:set -DnewVersion="$CANDIDATE_VERSION" -DgenerateBackupPoms=false
+      - name: Verify candidate against PostgreSQL Testcontainers
+        run: ./mvnw -B -ntp verify
+      - name: Package candidate JAR
+        run: ./mvnw -B -ntp -DskipTests package
+      - name: Build matching candidate image
+        run: |
+          docker build -t "orderflow-api:$CANDIDATE_VERSION" .
+          mkdir -p release-evidence
+          cp "target/orderflow-api-$CANDIDATE_VERSION.jar" "release-evidence/orderflow-api-$CANDIDATE_VERSION.jar"
+          (cd release-evidence && sha256sum *.jar > SHA256SUMS)
+          printf 'Git commit: %s\nCandidate version: %s\n' "$GITHUB_SHA" "$CANDIDATE_VERSION" > release-evidence/build-info.txt
+      - name: Generate candidate image SBOM
+        uses: anchore/sbom-action@v0.24.0
+        with:
+          image: orderflow-api:${{ inputs.version }}
+          format: spdx-json
+          output-file: release-evidence/image.spdx.json
+          upload-artifact: false
+      - name: Block fixable critical image vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: orderflow-api:${{ inputs.version }}
+          format: json
+          output: release-evidence/image-vulnerabilities.json
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+      - name: Generate signed JAR build provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: release-evidence/orderflow-api-*.jar
+      - name: Upload verified candidate artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: orderflow-${{ inputs.version }}-${{ github.sha }}
+          path: release-evidence/
+          if-no-files-found: error
+          retention-days: 14
