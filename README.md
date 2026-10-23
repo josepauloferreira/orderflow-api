@@ -125,7 +125,7 @@ Stage 8 provides reproducible k6 catalog and last-unit contention tests, Postgre
 
 ## Release candidate and security checks
 
-PRs run dependency review, container vulnerability inspection and SBOM generation in addition to Java and Docker integration tests. A manual release-candidate workflow can build a versioned JAR, an image SBOM and a signed provenance attestation **without publishing a release or pushing to a registry**. The policy blocks newly introduced high-severity vulnerable dependencies and fixable critical container findings; high image findings are recorded for review.
+PRs run container vulnerability inspection and SBOM generation in addition to Java and Docker integration tests. GitHub's dependency-diff review is configured but currently **skipped until Dependency Graph is enabled**; see the release runbook for that prerequisite. A manual release-candidate workflow can build a versioned JAR, an image SBOM and a signed provenance attestation **without publishing a release or pushing to a registry**. The optional dependency-diff policy would block newly introduced high-severity vulnerable dependencies once enabled, while the active image-scan gate blocks fixable critical findings; high image findings are recorded for review.
 
 Follow [the candidate release procedure](docs/release-process.md) before using it; it requires a reviewed `main` commit. No release has been issued automatically.
 

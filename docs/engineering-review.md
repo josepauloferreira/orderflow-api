@@ -24,7 +24,7 @@
 | Partially addressed (stage 8) | No sustained representative load baseline, rate limiting or quotas | Added short k6 catalog/last-unit CI scenarios; follow up with large realistic datasets and gateway policies |
 | Medium | Monitoring lacks SLO targets, alert rules and cross-service tracing | Define SLOs and operational dashboards based on measurable requirements |
 | Improved in stage 7 | Common MVC failures previously had inconsistent shapes | Consolidated Problem Details advice; broaden OpenAPI error schemas and test remaining edge cases later |
-| Partially addressed (stage 9) | Release supply chain lacked a clear policy | Added PR dependency review, image SBOM, Trivy critical gate and manual attested JAR candidate; **no deployed image signing, publication or complete release verification yet** |
+| Partially addressed (stage 9) | Release supply chain lacked a clear policy | Added **opt-in** PR dependency review (currently skipped until Dependency Graph enabled), image SBOM, Trivy critical gate and manual attested JAR candidate; **no deployed image signing, publication or complete release verification yet** |
 | Partially addressed (stage 8) | No off-host disaster-recovery evidence or RPO/RTO targets | Added isolated same-server pg_dump/pg_restore drill with aggregate reconciliation; rehearse loss of primary on another host |
 | Low | Some application services accept transport-layer request records | Split into application commands only when another adapter requires it |
 

@@ -9,7 +9,7 @@ A professionally presented reference backend should demonstrate how source code 
 
 ## Decision
 
-- On pull requests, run GitHub dependency review, build an unpublished local candidate image, generate SPDX SBOM evidence, report high/critical Trivy image findings and **fail on fixable critical findings**.
+- On pull requests, run GitHub dependency review **where repository Dependency Graph is enabled (otherwise explicitly skip and document the prerequisite)**, build an unpublished local candidate image, generate SPDX SBOM evidence, report high/critical Trivy image findings and **fail on fixable critical findings**.
 - Offer a **manual** candidate workflow on `main`. A human supplies an `x.y.z-rc.n` version; the runner updates POM version only within its ephemeral working copy, executes `mvn verify`, builds a JAR and container image, records the source SHA and JAR checksum and generates the image SBOM.
 - Request GitHub OIDC credentials with only the job-specific permissions required for a JAR build attestation. Provenance attestation is about the JAR, **not** a signature over an uploaded container image.
 - Upload candidate artifacts to the workflow run for short-term inspection; do not create tags, registry pushes, releases, or deployments.

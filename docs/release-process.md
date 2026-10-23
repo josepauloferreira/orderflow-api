@@ -4,11 +4,11 @@
 
 ## Pull request gates
 
-Every PR runs `ci.yml` (Java 25 Maven/Testcontainers, Docker + real Keycloak, bounded k6/lock/restore exercise) and `supply-chain.yml`.
+Every PR runs `ci.yml` (Java 25 Maven/Testcontainers, Docker + real Keycloak, bounded k6/lock/restore exercise) and `supply-chain.yml`. The **container image scanning gate is active**; the GitHub dependency-diff job is skipped until Dependency Graph is enabled (Settings → Security) **and** the repository Actions variable `ORDERFLOW_DEPENDENCY_GRAPH_ENABLED` is set to `true`. This is a visible prerequisite, not a silently bypassed successful dependency review.
 
 The security workflow performs:
 
-1. GitHub dependency review on the pull-request diff: fail for newly introduced HIGH/CRITICAL known vulnerable dependencies.
+1. GitHub dependency review on the pull-request diff **when explicitly enabled**: fail for newly introduced HIGH/CRITICAL known vulnerable dependencies. Initially this job is skipped because the repository's Dependency Graph API is disabled; it must be enabled before treating it as an enforced merge gate.
 2. A local image build, without publishing to a registry.
 3. An SPDX JSON image SBOM generated using Syft through Anchore's action.
 4. A Trivy HIGH/CRITICAL findings report uploaded as a short-lived artifact. High findings are **informational initially**, but must be reviewed before any release.

@@ -9,6 +9,10 @@ permissions:
 
 jobs:
   dependency-review:
+    # The GitHub dependency diff API requires the repository Dependency Graph.
+    # Enable it in Settings > Security > Dependency graph, then set this repo
+    # Actions variable to 'true'. The image scanner runs even while skipped.
+    if: vars.ORDERFLOW_DEPENDENCY_GRAPH_ENABLED == 'true'
     name: Dependency policy
     runs-on: ubuntu-latest
     steps:
@@ -34,7 +38,7 @@ jobs:
           output-file: orderflow-image.spdx.json
           upload-artifact: false
       - name: Record HIGH and CRITICAL vulnerabilities for review
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: orderflow-api:review
           format: json
@@ -43,7 +47,7 @@ jobs:
           ignore-unfixed: true
           exit-code: '0'
       - name: Block fixable critical vulnerabilities
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: orderflow-api:review
           format: table
