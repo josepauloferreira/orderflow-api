@@ -61,7 +61,7 @@ jobs:
           (cd release-evidence && sha256sum ./*.jar > SHA256SUMS && sha256sum --check SHA256SUMS)
           printf 'Git commit: %s\nCandidate version: %s\n' "$GITHUB_SHA" "$CANDIDATE_VERSION" > release-evidence/build-info.txt
       - name: Generate candidate image SBOM
-        uses: anchore/sbom-action@v0.24.0
+        uses: anchore/sbom-action@v0.24.3
         with:
           image: orderflow-api:${{ env.CANDIDATE_VERSION }}
           format: spdx-json
