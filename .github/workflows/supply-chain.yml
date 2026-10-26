@@ -31,7 +31,7 @@ jobs:
       - name: Build candidate image without publishing
         run: docker build --tag orderflow-api:review .
       - name: Generate image SBOM (SPDX JSON)
-        uses: anchore/sbom-action@v0.24.0
+        uses: anchore/sbom-action@v0.24.3
         with:
           image: orderflow-api:review
           format: spdx-json
